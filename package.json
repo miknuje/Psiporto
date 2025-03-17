@@ -1,0 +1,23 @@
+{
+  "name": "psiporto",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/miknuje/Psiporto.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/miknuje/Psiporto/issues"
+  },
+  "homepage": "https://github.com/miknuje/Psiporto#readme",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.8.2"
+  }
+}

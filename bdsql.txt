@@ -1,0 +1,155 @@
+-- Tabela Utilizador
+CREATE TABLE Utilizador (
+    cod_utilizador INT PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL,
+    Email VARCHAR(100) UNIQUE NOT NULL,
+    Telefone VARCHAR(15),
+    Cargo ENUM('TORVC', 'Administrativo', 'Coordenador', 'Formador') NOT NULL,
+    Password VARCHAR(100) NOT NULL
+);
+
+-- Tabela Área
+CREATE TABLE Area (
+    cod_area VARCHAR(10) PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL
+);
+
+-- Tabela Utilizador_Área (Relacionamento N:N entre Utilizador e Área)
+CREATE TABLE Utilizador_Area (
+    cod_utilizador INT,
+    cod_area VARCHAR(10),
+    PRIMARY KEY (cod_utilizador, cod_area),
+    FOREIGN KEY (cod_utilizador) REFERENCES Utilizador(cod_utilizador),
+    FOREIGN KEY (cod_area) REFERENCES Area(cod_area)
+);
+
+-- Tabela Núcleo
+CREATE TABLE Nucleo (
+    cod_nucleo VARCHAR(10) PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL
+);
+
+-- Tabela Área_Núcleo (Relacionamento N:N entre Área e Núcleo)
+CREATE TABLE Area_Nucleo (
+    cod_area VARCHAR(10),
+    cod_nucleo VARCHAR(10),
+    PRIMARY KEY (cod_area, cod_nucleo),
+    FOREIGN KEY (cod_area) REFERENCES Area(cod_area),
+    FOREIGN KEY (cod_nucleo) REFERENCES Nucleo(cod_nucleo)
+);
+
+-- Tabela Unidade
+CREATE TABLE Unidade (
+    cod_unidade VARCHAR(10) PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL,
+    Duracao VARCHAR(50),
+    Data DATE
+);
+
+-- Tabela Núcleo_Unidade (Relacionamento N:N entre Núcleo e Unidade)
+CREATE TABLE Nucleo_Unidade (
+    cod_nucleo VARCHAR(10),
+    cod_unidade VARCHAR(10),
+    PRIMARY KEY (cod_nucleo, cod_unidade),
+    FOREIGN KEY (cod_nucleo) REFERENCES Nucleo(cod_nucleo),
+    FOREIGN KEY (cod_unidade) REFERENCES Unidade(cod_unidade)
+);
+
+-- Tabela Diagnóstico
+CREATE TABLE Diagnostico (
+    cod_diag INT PRIMARY KEY,
+    PIE BOOLEAN,
+    Contrato BOOLEAN,
+    Nivel_a_obter VARCHAR(50),
+    Modalidade ENUM(
+        'Processo RVCC', 'Curso EFA', 'Formação Modular', 'Curso de Educação e Formação', 
+        'Curso Profissional', 'Curso de Aprendizagem', 'Decreto-Lei nº 357/2007 - UFCD', 
+        'Decreto-Lei nº 357/2007 - Exame', 'Decreto-Lei nº 357/2007 - Sem Disciplinas em Falta', 
+        'Portugues Língua de Acolhimento (PLA)', 'Curso de Especialização Tecnológica', 
+        'Jovem +Digital', 'Certificado de Competências Digitais', 
+        'Comissão de Avaliação e Certificação (CAC / CTC)', 'Maquinista Ferroviário', 
+        'Programa Qualificação para a Internacionalização', 'Programa Valorizar Social', 
+        'Reconhecimento de Títulos de Formação obtidos no Estrangeiro', 'Outro', 
+        'Curso Científico-Humanístico', 'Curso Artístico Especializado', 'Ensino Básico Geral'
+    )
+);
+
+-- Tabela Candidato
+CREATE TABLE Candidato (
+    sigo INT PRIMARY KEY,
+    cod_inscricao INT,
+    Portfolio BOOLEAN,
+    Grelhas_Professores BOOLEAN,
+    CC BOOLEAN,
+    CH BOOLEAN,
+    OBS TEXT,
+    FOREIGN KEY (cod_inscricao) REFERENCES Inscricao(cod_inscricao)
+);
+
+-- Tabela Inscrição
+CREATE TABLE Inscricao (
+    cod_inscricao INT PRIMARY KEY,
+    Nome VARCHAR(100) NOT NULL,
+    Telefone VARCHAR(15),
+    Email VARCHAR(100),
+    NIF VARCHAR(9),
+    Habilitacoes VARCHAR(100),
+    Num_DOC_ID VARCHAR(20),
+    NISS VARCHAR(11),
+    Data_nascimento DATE,
+    Situacao_face_ao_emprego VARCHAR(50),
+    Data_desemprego DATE,
+    Qualificacoes VARCHAR(100),
+    Data_Inscricao DATE
+);
+
+-- Tabela Diagnóstico_Candidato (Relacionamento N:N entre Diagnóstico e Candidato)
+CREATE TABLE Diagnostico_Candidato (
+    cod_diag INT,
+    sigo INT,
+    PRIMARY KEY (cod_diag, sigo),
+    FOREIGN KEY (cod_diag) REFERENCES Diagnostico(cod_diag),
+    FOREIGN KEY (sigo) REFERENCES Candidato(sigo)
+);
+
+-- Tabela Sumário
+CREATE TABLE Sumario (
+    cod_sum INT PRIMARY KEY,
+    tipo_sum ENUM('FCI', 'FCE', 'Sessão validação', 'Sessão Preparação para Júri', 'Sessão Júri')
+);
+
+-- Tabela Sumário_Candidato (Relacionamento N:N entre Sumário e Candidato)
+CREATE TABLE Sumario_Candidato (
+    cod_sum INT,
+    sigo INT,
+    PRIMARY KEY (cod_sum, sigo),
+    FOREIGN KEY (cod_sum) REFERENCES Sumario(cod_sum),
+    FOREIGN KEY (sigo) REFERENCES Candidato(sigo)
+);
+
+-- Tabela Sessão
+CREATE TABLE Sessao (
+    cod_sessao INT PRIMARY KEY,
+    Data DATE,
+    Duracao VARCHAR(50),
+    Nome VARCHAR(100),
+    Descritivo TEXT
+);
+
+-- Tabela Sumário_Sessão (Relacionamento N:N entre Sumário e Sessão)
+CREATE TABLE Sumario_Sessao (
+    cod_sum INT,
+    cod_sessao INT,
+    PRIMARY KEY (cod_sum, cod_sessao),
+    FOREIGN KEY (cod_sum) REFERENCES Sumario(cod_sum),
+    FOREIGN KEY (cod_sessao) REFERENCES Sessao(cod_sessao)
+);
+
+-- Tabela Sumário_Utilizador (Relacionamento N:N entre Sumário e Utilizador)
+CREATE TABLE Sumario_Utilizador (
+    cod_sum INT,
+    cod_utilizador INT,
+    PRIMARY KEY (cod_sum, cod_utilizador),
+    FOREIGN KEY (cod_sum) REFERENCES Sumario(cod_sum),
+    FOREIGN KEY (cod_utilizador) REFERENCES Utilizador(cod_utilizador)
+);
