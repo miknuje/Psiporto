@@ -5,6 +5,7 @@ const { connectDB } = require("./config/db");
 const areaRoutes = require("./routes/areaRoutes");
 const nucleoRoutes = require("./routes/nucleoRoutes");
 const unidadeRoutes = require("./routes/unidadeRoutes");
+const nivelRoutes = require("./routes/nivelRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,6 +21,7 @@ connectDB();
 app.use("/api/areas", areaRoutes);
 app.use("/api/nucleos", nucleoRoutes);
 app.use("/api/unidades", unidadeRoutes);
+app.use("/api/niveis", nivelRoutes);
 
 // Iniciar servidor
 app.listen(PORT, () => {

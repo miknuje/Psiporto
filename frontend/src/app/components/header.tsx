@@ -99,7 +99,7 @@ export default function Header() {
 
           {/* Desktop CTA Buttons */}
           <div className="hidden lg:flex items-center space-x-4">
-            <Button variant="outline" className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-orange-500 px-5 py-2 h-auto">
+            <Button variant="outline" className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto">
               Entrar
             </Button>
             <Button className="bg-orange-300 hover:bg-orange-500 text-white px-5 py-2 h-auto">Agendar Consulta</Button>
@@ -140,7 +140,7 @@ export default function Header() {
                 </Link>
               ))}
               <div className="pt-4 flex flex-col space-y-3">
-                <Button variant="outline" className="bg-orange-300 border-orange-300 text-white hover:bg-orange-500 w-full">
+                <Button variant="outline" className="bg-orange-300 border-orange-300 text-white hover:bg-yellow-200 w-full">
                   Entrar
                 </Button>
                 <Button className="bg-orange-300 hover:bg-orange-500 text-white w-full">Agendar Consulta</Button>
