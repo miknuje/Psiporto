@@ -120,15 +120,6 @@ const LoginPage: React.FC = () => {
             {isLoading ? "Entrando..." : "Entrar"}
           </Button>
         </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Não tem uma conta?{" "}
-            <Link href="/register" className="text-orange-500 hover:text-orange-700 font-medium">
-              Registar
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
   );
