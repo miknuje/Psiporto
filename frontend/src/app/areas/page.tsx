@@ -9,6 +9,7 @@ interface Area {
   _id: string;
   cod_area: string;
   Nome: string;
+  isDeleted?: boolean;
 }
 
 interface Nucleo {
@@ -16,6 +17,7 @@ interface Nucleo {
   cod_nucleo: string;
   Nome: string;
   cod_area: string;
+  isDeleted?: boolean;
 }
 
 interface Unidade {
@@ -24,12 +26,14 @@ interface Unidade {
   Nome: string;
   cod_nucleo: string | null;
   cod_area: string;
+  isDeleted?: boolean;
 }
 
 interface Nivel {
   _id: string;
   cod_nivel: string;
   cod_unidade: string;
+  isDeleted?: boolean;
 }
 
 const AreasPage: React.FC = () => {
@@ -48,12 +52,24 @@ const AreasPage: React.FC = () => {
     id: string;
     data: any;
   } | null>(null);
+  const [loading, setLoading] = useState(true); 
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true); // Ativa o estado de carregamento
+      await fetchData("areas", setAreas);
+      await fetchData("nucleos", setNucleos);
+      await fetchData("unidades", setUnidades);
+      await fetchData("niveis", setNiveis);
+    } catch (error) {
+      console.error("Erro ao buscar dados:", error);
+    } finally {
+      setLoading(false); // Desativa o estado de carregamento, independentemente do resultado
+    }
+  };
 
   useEffect(() => {
-    fetchData("areas", setAreas);
-    fetchData("nucleos", setNucleos);
-    fetchData("unidades", setUnidades);
-    fetchData("niveis", setNiveis);
+    fetchAllData();
   }, []);
 
   const fetchData = async (endpoint: string, setData: Function) => {
@@ -65,6 +81,18 @@ const AreasPage: React.FC = () => {
     }
   };
 
+  // Renderização condicional com base no estado de carregamento
+  if (loading) {
+    return <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-90 z-50">
+    <div className="text-center">
+      {/* Spinner animado */}
+      <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+      {/* Mensagem de carregamento */}
+      <p className="text-lg font-semibold text-gray-700">Carregando...</p>
+    </div>
+  </div>;
+  }
+
   const unidadesComNiveis = unidades
     .map((unidade) => ({
       ...unidade,
@@ -72,109 +100,121 @@ const AreasPage: React.FC = () => {
     }))
     .sort((a, b) => a.cod_unidade.localeCompare(b.cod_unidade));
 
-  const filteredAreas = areas.filter(
-    (area) =>
-      area.Nome.toLowerCase().includes(search.toLowerCase()) ||
-      area.cod_area.toLowerCase().includes(search.toLowerCase()) ||
-      nucleos.some(
-        (nucleo) =>
-          nucleo.cod_area === area.cod_area &&
-          (nucleo.Nome.toLowerCase().includes(search.toLowerCase()) ||
-            nucleo.cod_nucleo.toLowerCase().includes(search.toLowerCase()))
-      ) ||
-      unidadesComNiveis.some(
-        (unidade) =>
-          (nucleos.some(
-            (nucleo) =>
-              nucleo.cod_area === area.cod_area &&
-              nucleo.cod_nucleo === unidade.cod_nucleo
-          ) ||
-            (unidade.cod_nucleo === null &&
-              unidade.cod_area === area.cod_area)) &&
-          (unidade.Nome.toLowerCase().includes(search.toLowerCase()) ||
-            unidade.cod_unidade.toLowerCase().includes(search.toLowerCase()))
-      )
-  );
+    const filteredAreas = areas.filter(
+      (area) =>
+        (area.Nome && area.Nome.toLowerCase().includes(search.toLowerCase())) ||
+        (area.cod_area && area.cod_area.toLowerCase().includes(search.toLowerCase())) ||
+        nucleos.some(
+          (nucleo) =>
+            nucleo.cod_area === area.cod_area &&
+            (nucleo.Nome && nucleo.Nome.toLowerCase().includes(search.toLowerCase())) ||
+            (nucleo.cod_nucleo && nucleo.cod_nucleo.toLowerCase().includes(search.toLowerCase()))
+        ) ||
+        unidadesComNiveis.some(
+          (unidade) =>
+            (nucleos.some(
+              (nucleo) =>
+                nucleo.cod_area === area.cod_area &&
+                nucleo.cod_nucleo === unidade.cod_nucleo
+            ) ||
+              (unidade.cod_nucleo === null &&
+                unidade.cod_area === area.cod_area)) &&
+            (unidade.Nome && unidade.Nome.toLowerCase().includes(search.toLowerCase())) ||
+            (unidade.cod_unidade && unidade.cod_unidade.toLowerCase().includes(search.toLowerCase()))
+        )
+    );
 
-  const handleAdd = async (type: string, data: any) => {
-    try {
-      const response = await axios.post(`http://localhost:5000/api/${type}`, data);
-      if (type === "areas") {
-        setAreas((prev) => [...prev, response.data]);
-      } else if (type === "nucleos") {
-        setNucleos((prev) => [...prev, response.data]);
-      } else if (type === "unidades") {
-        setUnidades((prev) => [...prev, response.data]);
-      } else if (type === "niveis") {
-        setNiveis((prev) => [...prev, response.data]);
+    const handleAdd = async (type: string, data: any) => {
+      try {
+        const response = await axios.post(`http://localhost:5000/api/${type}`, data);
+        if (type === "areas") {
+          setAreas((prev) => [...prev, response.data]);
+        } else if (type === "nucleos") {
+          setNucleos((prev) => [...prev, response.data]);
+        } else if (type === "unidades") {
+          setUnidades((prev) => [...prev, response.data]);
+        } else if (type === "niveis") {
+          setNiveis((prev) => [...prev, response.data]);
+        }
+    
+        // Fechar o modal de adição
+        setIsAddModalOpen(false);
+        setIsAddNivelModalOpen(false);
+        setIsAddNucleoModalOpen(false);
+        setIsAddUnidadeModalOpen(false);
+    
+        // Recarregar os dados para atualizar a tabela
+        await fetchAllData();
+      } catch (error) {
+        console.error(`Erro ao adicionar ${type}:`, error);
       }
-      setIsAddModalOpen(false);
-      setIsAddNivelModalOpen(false);
-    } catch (error) {
-      console.error(`Erro ao adicionar ${type}:`, error);
-    }
-  };
+    };
 
-  const handleEdit = async (type: string, id: string, updatedData: any) => {
-    try {
-      // Crie um objeto com a estrutura correta baseada no tipo
-      const formattedData: any = {
-        Nome: updatedData.Nome
-      };
-      
-      // Adicione o campo de código correto baseado no tipo
-      if (type === "areas") {
-        formattedData.cod_area = updatedData.cod;
-      } else if (type === "nucleos") {
-        formattedData.cod_nucleo = updatedData.cod;
-      } else if (type === "unidades") {
-        formattedData.cod_unidade = updatedData.cod;
-        formattedData.cod_nucleo = updatedData.cod_nucleo;
-        formattedData.cod_area = updatedData.cod_area;
-      } else if (type === "niveis") {
-        formattedData.cod_nivel = updatedData.cod;
+    const handleEdit = async (type: string, id: string, updatedData: any) => {
+      try {
+        // Crie um objeto com a estrutura correta baseada no tipo
+        const formattedData: any = {
+          Nome: updatedData.Nome,
+          isDeleted: false,
+        };
+    
+        // Adicione o campo de código correto baseado no tipo
+        if (type === "areas") {
+          formattedData.cod_area = updatedData.cod;
+        } else if (type === "nucleos") {
+          formattedData.cod_nucleo = updatedData.cod;
+          formattedData.cod_area = updatedData.cod_area; // Certifique-se de que o campo cod_area está sendo enviado
+        } else if (type === "unidades") {
+          formattedData.cod_unidade = updatedData.cod;
+          formattedData.cod_nucleo = updatedData.cod_nucleo;
+          formattedData.cod_area = updatedData.cod_area;
+        } else if (type === "niveis") {
+          formattedData.cod_nivel = updatedData.cod;
+        }
+    
+        // Verifique o endpoint e os dados enviados
+        const endpoint = `http://localhost:5000/api/${type}/${id}`;
+        console.log("Endpoint:", endpoint);
+        console.log("Dados enviados:", formattedData);
+    
+        const response = await axios.put(endpoint, formattedData);
+        console.log("Resposta do servidor:", response.data);
+    
+        // Atualize o estado local
+        if (type === "areas") {
+          setAreas((prev) =>
+            prev.map((area) =>
+              area.cod_area === id ? { ...area, ...formattedData } : area
+            )
+          );
+        } else if (type === "nucleos") {
+          setNucleos((prev) =>
+            prev.map((nucleo) =>
+              nucleo.cod_nucleo === id ? { ...nucleo, ...formattedData } : nucleo
+            )
+          );
+        } else if (type === "unidades") {
+          setUnidades((prev) =>
+            prev.map((unidade) =>
+              unidade.cod_unidade === id ? { ...unidade, ...formattedData } : unidade
+            )
+          );
+        } else if (type === "niveis") {
+          setNiveis((prev) =>
+            prev.map((nivel) =>
+              nivel.cod_nivel === id ? { ...nivel, ...formattedData } : nivel
+            )
+          );
+        }
+    
+        setIsEditModalOpen(false);
+    
+        // Recarregar os dados para atualizar a tabela
+        await fetchAllData();
+      } catch (error) {
+        console.error(`Erro ao editar ${type}:`, error);
       }
-      
-      // Verifique o endpoint e os dados enviados
-      const endpoint = `http://localhost:5000/api/${type}/${id}`;
-      console.log("Endpoint:", endpoint);
-      console.log("Dados enviados:", formattedData);
-      
-      const response = await axios.put(endpoint, formattedData);
-      console.log("Resposta do servidor:", response.data);
-      
-      // Atualize o estado local
-      if (type === "areas") {
-        setAreas((prev) =>
-          prev.map((area) =>
-            area.cod_area === id ? { ...area, ...formattedData } : area
-          )
-        );
-      } else if (type === "nucleos") {
-        setNucleos((prev) =>
-          prev.map((nucleo) =>
-            nucleo.cod_nucleo === id ? { ...nucleo, ...formattedData } : nucleo
-          )
-        );
-      } else if (type === "unidades") {
-        setUnidades((prev) =>
-          prev.map((unidade) =>
-            unidade.cod_unidade === id ? { ...unidade, ...formattedData } : unidade
-          )
-        );
-      } else if (type === "niveis") {
-        setNiveis((prev) =>
-          prev.map((nivel) =>
-            nivel.cod_nivel === id ? { ...nivel, ...formattedData } : nivel
-          )
-        );
-      }
-      
-      setIsEditModalOpen(false);
-    } catch (error) {
-      console.error(`Erro ao editar ${type}:`, error);
-    }
-  };
+    };
 
   const handleDelete = async (type: string, id: string) => {
     const confirmDelete = window.confirm("Tem certeza que deseja remover?");
@@ -567,6 +607,7 @@ const AreasPage: React.FC = () => {
                 const data = {
                   cod_area: formData.get("cod_area"),
                   Nome: formData.get("Nome"),
+                  isDeleted: false // Add this line
                 };
                 handleAdd("areas", data);
               }}
@@ -606,10 +647,9 @@ const AreasPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal de Edição */}
 {isEditModalOpen && editingItem && (
-  <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
-    <div className="bg-white p-6 rounded-lg w-2/3 shadow-lg max-h-[90vh] overflow-y-auto">
+  <div className="fixed inset-0 flex justify-center items-center">
+    <div className="bg-white p-6 rounded-lg w-1/3 shadow-lg">
       <h2 className="text-xl font-bold mb-4 text-orange-500">
         Editar {editingItem.type.charAt(0).toUpperCase() + editingItem.type.slice(1, -1)}
       </h2>
@@ -621,14 +661,16 @@ const AreasPage: React.FC = () => {
             cod: formData.get("cod"),
             Nome: formData.get("Nome"),
           };
-          
-          // Para unidades, adicione o campo de núcleo
-          if (editingItem.type === "unidades") {
+
+          // Adicionar campos específicos com base no tipo
+          if (editingItem.type === "nucleos") {
+            updatedData.cod_area = formData.get("cod_area"); // Adiciona o campo cod_area para núcleos
+          } else if (editingItem.type === "unidades") {
             const nucleoValue = formData.get("nucleo");
             updatedData.cod_nucleo = nucleoValue === "null" ? null : nucleoValue;
             updatedData.cod_area = formData.get("area");
           }
-          
+
           handleEdit(editingItem.type, editingItem.id, updatedData);
         }}
       >
@@ -652,7 +694,7 @@ const AreasPage: React.FC = () => {
               required
             />
           </div>
-          
+
           {/* Campo para editar o nome */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
@@ -664,8 +706,28 @@ const AreasPage: React.FC = () => {
               required
             />
           </div>
-          
-          {/* Se for uma unidade, mostrar seleção de núcleo */}
+
+          {/* Se for um núcleo, mostrar seleção de área */}
+          {editingItem.type === "nucleos" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Área</label>
+              <select
+                name="cod_area"
+                defaultValue={editingItem.data.cod_area}
+                className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+                required
+              >
+                <option value="">Selecione uma área</option>
+                {areas.map((area) => (
+                  <option key={area._id} value={area.cod_area}>
+                    {area.Nome} ({area.cod_area})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Se for uma unidade, mostrar seleção de núcleo e área */}
           {editingItem.type === "unidades" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Núcleo (opcional)</label>
@@ -681,7 +743,7 @@ const AreasPage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              
+
               <label className="block text-sm font-medium text-gray-700 mb-1 mt-2">Área</label>
               <select
                 name="area"
@@ -698,7 +760,7 @@ const AreasPage: React.FC = () => {
             </div>
           )}
         </div>
-        
+
         {/* Se for uma área, mostrar seus núcleos */}
         {editingItem.type === "areas" && (
           <div className="mb-4">
@@ -733,15 +795,13 @@ const AreasPage: React.FC = () => {
               onClick={() => {
                 setIsEditModalOpen(false);
                 setEditingItem({...editingItem});
-                // Aqui você pode abrir um modal para adicionar núcleo
-                // ou implementar uma lógica para adicionar diretamente
-                // Exemplo: setIsAddNucleoModalOpen(true);
+                setIsAddNucleoModalOpen(true); // Abrir modal de adição de núcleo
               }}
               className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
             >
               Adicionar Núcleo
             </Button>
-            
+
             <h3 className="font-bold mb-2 mt-4 text-gray-700">Unidades desta Área sem Núcleo</h3>
             <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 mb-2">
               {unidades
@@ -773,8 +833,7 @@ const AreasPage: React.FC = () => {
               onClick={() => {
                 setIsEditModalOpen(false);
                 setEditingItem({...editingItem});
-                // Aqui você pode abrir um modal para adicionar unidade
-                // Exemplo: setIsAddUnidadeModalOpen(true);
+                setIsAddUnidadeModalOpen(true); // Abrir modal de adição de unidade
               }}
               className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
             >
@@ -782,7 +841,7 @@ const AreasPage: React.FC = () => {
             </Button>
           </div>
         )}
-        
+
         {/* Se for um núcleo, mostrar suas unidades */}
         {editingItem.type === "nucleos" && (
           <div className="mb-4">
@@ -817,8 +876,7 @@ const AreasPage: React.FC = () => {
               onClick={() => {
                 setIsEditModalOpen(false);
                 setEditingItem({...editingItem});
-                // Aqui você pode abrir um modal para adicionar unidade
-                // Exemplo: setIsAddUnidadeModalOpen(true);
+                setIsAddUnidadeModalOpen(true); // Abrir modal de adição de unidade
               }}
               className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
             >
@@ -826,7 +884,7 @@ const AreasPage: React.FC = () => {
             </Button>
           </div>
         )}
-        
+
         {/* Se for uma unidade, mostrar os níveis */}
         {editingItem.type === "unidades" && (
           <div className="mb-4">
@@ -857,7 +915,7 @@ const AreasPage: React.FC = () => {
             </Button>
           </div>
         )}
-        
+
         <div className="flex justify-end">
           <Button
             type="button"
@@ -880,7 +938,7 @@ const AreasPage: React.FC = () => {
 )}
 {/* Modal de Adição de Unidade */}
 {isAddUnidadeModalOpen && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+  <div className="fixed inset-0 flex justify-center items-center">
     <div className="bg-white p-6 rounded-lg w-1/3 shadow-lg">
       <h2 className="text-xl font-bold mb-4 text-orange-500">Adicionar Unidade</h2>
       <form
@@ -892,7 +950,8 @@ const AreasPage: React.FC = () => {
             cod_unidade: formData.get("cod_unidade"),
             Nome: formData.get("Nome"),
             cod_nucleo: nucleoValue === "null" ? null : nucleoValue,
-            cod_area: editingItem?.type === "areas" ? editingItem?.id : formData.get("cod_area")
+            cod_area: editingItem?.type === "areas" ? editingItem?.id : formData.get("cod_area"),
+            isDeleted: false // Add this line
           };
           handleAdd("unidades", data);
           setIsAddUnidadeModalOpen(false);
@@ -981,7 +1040,7 @@ const AreasPage: React.FC = () => {
 )}
 {/* Modal de Adição de Núcleo */}
 {isAddNucleoModalOpen && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+  <div className="fixed inset-0 flex justify-center items-center">
     <div className="bg-white p-6 rounded-lg w-1/3 shadow-lg">
       <h2 className="text-xl font-bold mb-4 text-orange-500">Adicionar Núcleo</h2>
       <form
@@ -991,7 +1050,8 @@ const AreasPage: React.FC = () => {
           const data = {
             cod_nucleo: formData.get("cod_nucleo"),
             Nome: formData.get("Nome"),
-            cod_area: editingItem?.id // Associa o núcleo à área sendo editada
+            cod_area: formData.get("cod_area"), // Área é obrigatória
+            isDeleted: false,
           };
           handleAdd("nucleos", data);
           setIsAddNucleoModalOpen(false);
@@ -1017,6 +1077,21 @@ const AreasPage: React.FC = () => {
             required
           />
         </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Área</label>
+          <select
+            name="cod_area"
+            className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+            required
+          >
+            <option value="">Selecione uma área</option>
+            {areas.map((area) => (
+              <option key={area._id} value={area.cod_area}>
+                {area.Nome} ({area.cod_area})
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="flex justify-end">
           <Button
             type="button"
@@ -1039,16 +1114,17 @@ const AreasPage: React.FC = () => {
 )}
       {/* Modal de Adição de Nível */}
       {isAddNivelModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg w-1/3">
-            <h2 className="text-xl font-bold mb-4">Adicionar Nível</h2>
+        <div className="fixed inset-0 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-lg w-1/3 shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-orange-500">Adicionar Nível</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target as HTMLFormElement);
                 const data = {
-                  cod_unidade: editingItem?.id, // Associa o nível à unidade sendo editada
-                  cod_nivel: formData.get("cod_nivel"), // Apenas o código do nível
+                  cod_unidade: editingItem?.id,
+                  cod_nivel: formData.get("cod_nivel"),
+                  isDeleted: false // Add this line
                 };
                 handleAdd("niveis", data);
               }}
@@ -1065,11 +1141,12 @@ const AreasPage: React.FC = () => {
                 <Button
                   type="button"
                   onClick={() => setIsAddNivelModalOpen(false)}
-                  className="bg-gray-500 mr-2"
+                  variant="outline"
+                  className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto mr-2"
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-green-500">
+                <Button type="submit" className="bg-orange-300 hover:bg-orange-500 text-white px-5 py-2 h-auto">
                   Adicionar
                 </Button>
               </div>
