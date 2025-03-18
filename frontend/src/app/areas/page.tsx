@@ -41,6 +41,8 @@ const AreasPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddNivelModalOpen, setIsAddNivelModalOpen] = useState(false);
+  const [isAddNucleoModalOpen, setIsAddNucleoModalOpen] = useState(false);
+  const [isAddUnidadeModalOpen, setIsAddUnidadeModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<{
     type: string;
     id: string;
@@ -115,26 +117,59 @@ const AreasPage: React.FC = () => {
 
   const handleEdit = async (type: string, id: string, updatedData: any) => {
     try {
-      await axios.put(`http://localhost:5000/api/${type}/${id}`, updatedData);
+      // Crie um objeto com a estrutura correta baseada no tipo
+      const formattedData: any = {
+        Nome: updatedData.Nome
+      };
+      
+      // Adicione o campo de código correto baseado no tipo
+      if (type === "areas") {
+        formattedData.cod_area = updatedData.cod;
+      } else if (type === "nucleos") {
+        formattedData.cod_nucleo = updatedData.cod;
+      } else if (type === "unidades") {
+        formattedData.cod_unidade = updatedData.cod;
+        formattedData.cod_nucleo = updatedData.cod_nucleo;
+        formattedData.cod_area = updatedData.cod_area;
+      } else if (type === "niveis") {
+        formattedData.cod_nivel = updatedData.cod;
+      }
+      
+      // Verifique o endpoint e os dados enviados
+      const endpoint = `http://localhost:5000/api/${type}/${id}`;
+      console.log("Endpoint:", endpoint);
+      console.log("Dados enviados:", formattedData);
+      
+      const response = await axios.put(endpoint, formattedData);
+      console.log("Resposta do servidor:", response.data);
+      
+      // Atualize o estado local
       if (type === "areas") {
         setAreas((prev) =>
           prev.map((area) =>
-            area.cod_area === id ? { ...area, ...updatedData } : area
+            area.cod_area === id ? { ...area, ...formattedData } : area
           )
         );
       } else if (type === "nucleos") {
         setNucleos((prev) =>
           prev.map((nucleo) =>
-            nucleo.cod_nucleo === id ? { ...nucleo, ...updatedData } : nucleo
+            nucleo.cod_nucleo === id ? { ...nucleo, ...formattedData } : nucleo
           )
         );
       } else if (type === "unidades") {
         setUnidades((prev) =>
           prev.map((unidade) =>
-            unidade.cod_unidade === id ? { ...unidade, ...updatedData } : unidade
+            unidade.cod_unidade === id ? { ...unidade, ...formattedData } : unidade
+          )
+        );
+      } else if (type === "niveis") {
+        setNiveis((prev) =>
+          prev.map((nivel) =>
+            nivel.cod_nivel === id ? { ...nivel, ...formattedData } : nivel
           )
         );
       }
+      
       setIsEditModalOpen(false);
     } catch (error) {
       console.error(`Erro ao editar ${type}:`, error);
@@ -195,6 +230,25 @@ const AreasPage: React.FC = () => {
             onClick={() => setIsAddModalOpen(true)}
           >
             Adicionar Área
+          </Button>
+          <Button
+            onClick={() => {
+              setIsAddNucleoModalOpen(true);
+            }}
+            variant="outline"
+            className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto"
+          >
+            Adicionar Núcleo
+          </Button>
+
+          <Button
+            onClick={() => {
+              setIsAddUnidadeModalOpen(true);
+            }}
+            variant="outline"
+            className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto"
+          >
+            Adicionar Unidade
           </Button>
         </div>
         <table className="w-full border-collapse border border-gray-300">
@@ -553,45 +607,436 @@ const AreasPage: React.FC = () => {
       )}
 
       {/* Modal de Edição */}
-      {isEditModalOpen && editingItem && (
-        <div className="fixed inset-0 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg w-1/3 shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-orange-500">Editar {editingItem.type}</h2>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target as HTMLFormElement);
-                const updatedData = {
-                  Nome: formData.get("Nome"),
-                };
-                handleEdit(editingItem.type, editingItem.id, updatedData);
-              }}
-            >
-              <input
-                type="text"
-                name="Nome"
-                defaultValue={editingItem.data.Nome}
-                className="border p-2 mb-2 w-full"
-                required
-              />
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  variant="outline" 
-                  className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto mr-2"
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" className="bg-orange-300 hover:bg-orange-500 text-white px-5 py-2 h-auto">
-                  Salvar
-                </Button>
-              </div>
-            </form>
+{isEditModalOpen && editingItem && (
+  <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
+    <div className="bg-white p-6 rounded-lg w-2/3 shadow-lg max-h-[90vh] overflow-y-auto">
+      <h2 className="text-xl font-bold mb-4 text-orange-500">
+        Editar {editingItem.type.charAt(0).toUpperCase() + editingItem.type.slice(1, -1)}
+      </h2>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target as HTMLFormElement);
+          const updatedData: any = {
+            cod: formData.get("cod"),
+            Nome: formData.get("Nome"),
+          };
+          
+          // Para unidades, adicione o campo de núcleo
+          if (editingItem.type === "unidades") {
+            const nucleoValue = formData.get("nucleo");
+            updatedData.cod_nucleo = nucleoValue === "null" ? null : nucleoValue;
+            updatedData.cod_area = formData.get("area");
+          }
+          
+          handleEdit(editingItem.type, editingItem.id, updatedData);
+        }}
+      >
+        <div className="grid grid-cols-1 gap-4 mb-4">
+          {/* Campo para editar o código */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {editingItem.type === "areas" ? "Código da Área" :
+               editingItem.type === "nucleos" ? "Código do Núcleo" :
+               editingItem.type === "unidades" ? "Código da Unidade" : "Código"}
+            </label>
+            <input
+              type="text"
+              name="cod"
+              defaultValue={
+                editingItem.type === "areas" ? editingItem.data.cod_area :
+                editingItem.type === "nucleos" ? editingItem.data.cod_nucleo :
+                editingItem.type === "unidades" ? editingItem.data.cod_unidade : ""
+              }
+              className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+              required
+            />
           </div>
+          
+          {/* Campo para editar o nome */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+            <input
+              type="text"
+              name="Nome"
+              defaultValue={editingItem.data.Nome}
+              className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+              required
+            />
+          </div>
+          
+          {/* Se for uma unidade, mostrar seleção de núcleo */}
+          {editingItem.type === "unidades" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Núcleo (opcional)</label>
+              <select
+                name="nucleo"
+                defaultValue={editingItem.data.cod_nucleo || "null"}
+                className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+              >
+                <option value="null">Sem núcleo</option>
+                {nucleos.map((nucleo) => (
+                  <option key={nucleo._id} value={nucleo.cod_nucleo}>
+                    {nucleo.Nome} ({nucleo.cod_nucleo})
+                  </option>
+                ))}
+              </select>
+              
+              <label className="block text-sm font-medium text-gray-700 mb-1 mt-2">Área</label>
+              <select
+                name="area"
+                defaultValue={editingItem.data.cod_area}
+                className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+                required
+              >
+                {areas.map((area) => (
+                  <option key={area._id} value={area.cod_area}>
+                    {area.Nome} ({area.cod_area})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
-      )}
-
+        
+        {/* Se for uma área, mostrar seus núcleos */}
+        {editingItem.type === "areas" && (
+          <div className="mb-4">
+            <h3 className="font-bold mb-2 text-gray-700">Núcleos desta Área</h3>
+            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 mb-2">
+              {nucleos
+                .filter((nucleo) => nucleo.cod_area === editingItem.id)
+                .map((nucleo) => (
+                  <div key={nucleo._id} className="flex justify-between items-center mb-2 p-2 bg-gray-50 rounded">
+                    <span>{nucleo.Nome} ({nucleo.cod_nucleo})</span>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleEditClick("nucleos", nucleo.cod_nucleo, nucleo)}
+                        className="bg-orange-300 hover:bg-orange-500 text-white px-3 py-1 h-auto"
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        onClick={() => handleDelete("nucleos", nucleo.cod_nucleo)}
+                        className="bg-red-300 hover:bg-red-500 text-white px-3 py-1 h-auto"
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              {nucleos.filter((nucleo) => nucleo.cod_area === editingItem.id).length === 0 && (
+                <p className="text-gray-500 text-center py-2">Nenhum núcleo encontrado</p>
+              )}
+            </div>
+            <Button
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingItem({...editingItem});
+                // Aqui você pode abrir um modal para adicionar núcleo
+                // ou implementar uma lógica para adicionar diretamente
+                // Exemplo: setIsAddNucleoModalOpen(true);
+              }}
+              className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
+            >
+              Adicionar Núcleo
+            </Button>
+            
+            <h3 className="font-bold mb-2 mt-4 text-gray-700">Unidades desta Área sem Núcleo</h3>
+            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 mb-2">
+              {unidades
+                .filter((unidade) => unidade.cod_area === editingItem.id && unidade.cod_nucleo === null)
+                .map((unidade) => (
+                  <div key={unidade._id} className="flex justify-between items-center mb-2 p-2 bg-gray-50 rounded">
+                    <span>{unidade.Nome} ({unidade.cod_unidade})</span>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleEditClick("unidades", unidade.cod_unidade, unidade)}
+                        className="bg-orange-300 hover:bg-orange-500 text-white px-3 py-1 h-auto"
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        onClick={() => handleDelete("unidades", unidade.cod_unidade)}
+                        className="bg-red-300 hover:bg-red-500 text-white px-3 py-1 h-auto"
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              {unidades.filter((unidade) => unidade.cod_area === editingItem.id && unidade.cod_nucleo === null).length === 0 && (
+                <p className="text-gray-500 text-center py-2">Nenhuma unidade encontrada</p>
+              )}
+            </div>
+            <Button
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingItem({...editingItem});
+                // Aqui você pode abrir um modal para adicionar unidade
+                // Exemplo: setIsAddUnidadeModalOpen(true);
+              }}
+              className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
+            >
+              Adicionar Unidade
+            </Button>
+          </div>
+        )}
+        
+        {/* Se for um núcleo, mostrar suas unidades */}
+        {editingItem.type === "nucleos" && (
+          <div className="mb-4">
+            <h3 className="font-bold mb-2 text-gray-700">Unidades deste Núcleo</h3>
+            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 mb-2">
+              {unidades
+                .filter((unidade) => unidade.cod_nucleo === editingItem.id)
+                .map((unidade) => (
+                  <div key={unidade._id} className="flex justify-between items-center mb-2 p-2 bg-gray-50 rounded">
+                    <span>{unidade.Nome} ({unidade.cod_unidade})</span>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleEditClick("unidades", unidade.cod_unidade, unidade)}
+                        className="bg-orange-300 hover:bg-orange-500 text-white px-3 py-1 h-auto"
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        onClick={() => handleDelete("unidades", unidade.cod_unidade)}
+                        className="bg-red-300 hover:bg-red-500 text-white px-3 py-1 h-auto"
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              {unidades.filter((unidade) => unidade.cod_nucleo === editingItem.id).length === 0 && (
+                <p className="text-gray-500 text-center py-2">Nenhuma unidade encontrada</p>
+              )}
+            </div>
+            <Button
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingItem({...editingItem});
+                // Aqui você pode abrir um modal para adicionar unidade
+                // Exemplo: setIsAddUnidadeModalOpen(true);
+              }}
+              className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
+            >
+              Adicionar Unidade
+            </Button>
+          </div>
+        )}
+        
+        {/* Se for uma unidade, mostrar os níveis */}
+        {editingItem.type === "unidades" && (
+          <div className="mb-4">
+            <h3 className="font-bold mb-2 text-gray-700">Níveis desta Unidade</h3>
+            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 mb-2">
+              {unidadesComNiveis
+                .find((u) => u.cod_unidade === editingItem.id)
+                ?.niveis.map((nivel) => (
+                  <div key={nivel._id} className="flex justify-between items-center mb-2 p-2 bg-gray-50 rounded">
+                    <span>{nivel.cod_nivel}</span>
+                    <Button
+                      onClick={() => handleDelete("niveis", nivel.cod_nivel)}
+                      className="bg-red-300 hover:bg-red-500 text-white px-3 py-1 h-auto"
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ))}
+              {!unidadesComNiveis.find((u) => u.cod_unidade === editingItem.id)?.niveis.length && (
+                <p className="text-gray-500 text-center py-2">Nenhum nível encontrado</p>
+              )}
+            </div>
+            <Button
+              onClick={() => setIsAddNivelModalOpen(true)}
+              className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
+            >
+              Adicionar Nível
+            </Button>
+          </div>
+        )}
+        
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            onClick={() => setIsEditModalOpen(false)}
+            variant="outline"
+            className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto mr-2"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            type="submit" 
+            className="bg-orange-300 hover:bg-orange-500 text-white px-5 py-2 h-auto"
+          >
+            Salvar
+          </Button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+{/* Modal de Adição de Unidade */}
+{isAddUnidadeModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+    <div className="bg-white p-6 rounded-lg w-1/3 shadow-lg">
+      <h2 className="text-xl font-bold mb-4 text-orange-500">Adicionar Unidade</h2>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target as HTMLFormElement);
+          const nucleoValue = formData.get("cod_nucleo");
+          const data = {
+            cod_unidade: formData.get("cod_unidade"),
+            Nome: formData.get("Nome"),
+            cod_nucleo: nucleoValue === "null" ? null : nucleoValue,
+            cod_area: editingItem?.type === "areas" ? editingItem?.id : formData.get("cod_area")
+          };
+          handleAdd("unidades", data);
+          setIsAddUnidadeModalOpen(false);
+        }}
+      >
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Código da Unidade</label>
+          <input
+            type="text"
+            name="cod_unidade"
+            placeholder="Código da Unidade"
+            className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Unidade</label>
+          <input
+            type="text"
+            name="Nome"
+            placeholder="Nome da Unidade"
+            className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+            required
+          />
+        </div>
+        
+        {editingItem?.type === "nucleos" ? (
+          <input type="hidden" name="cod_nucleo" value={editingItem.id} />
+        ) : (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Núcleo (opcional)</label>
+            <select
+              name="cod_nucleo"
+              className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+            >
+              <option value="null">Sem núcleo</option>
+              {nucleos.map((nucleo) => (
+                <option 
+                  key={nucleo._id} 
+                  value={nucleo.cod_nucleo}
+                  selected={editingItem?.type === "nucleos" && editingItem.id === nucleo.cod_nucleo}
+                >
+                  {nucleo.Nome} ({nucleo.cod_nucleo})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        
+        {editingItem?.type !== "areas" && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Área</label>
+            <select
+              name="cod_area"
+              className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+              required
+            >
+              {areas.map((area) => (
+                <option key={area._id} value={area.cod_area}>
+                  {area.Nome} ({area.cod_area})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            onClick={() => setIsAddUnidadeModalOpen(false)}
+            variant="outline"
+            className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto mr-2"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            type="submit" 
+            className="bg-orange-300 hover:bg-orange-500 text-white px-5 py-2 h-auto"
+          >
+            Adicionar
+          </Button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+{/* Modal de Adição de Núcleo */}
+{isAddNucleoModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+    <div className="bg-white p-6 rounded-lg w-1/3 shadow-lg">
+      <h2 className="text-xl font-bold mb-4 text-orange-500">Adicionar Núcleo</h2>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target as HTMLFormElement);
+          const data = {
+            cod_nucleo: formData.get("cod_nucleo"),
+            Nome: formData.get("Nome"),
+            cod_area: editingItem?.id // Associa o núcleo à área sendo editada
+          };
+          handleAdd("nucleos", data);
+          setIsAddNucleoModalOpen(false);
+        }}
+      >
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Código do Núcleo</label>
+          <input
+            type="text"
+            name="cod_nucleo"
+            placeholder="Código do Núcleo"
+            className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Núcleo</label>
+          <input
+            type="text"
+            name="Nome"
+            placeholder="Nome do Núcleo"
+            className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+            required
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            onClick={() => setIsAddNucleoModalOpen(false)}
+            variant="outline"
+            className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto mr-2"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            type="submit" 
+            className="bg-orange-300 hover:bg-orange-500 text-white px-5 py-2 h-auto"
+          >
+            Adicionar
+          </Button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
       {/* Modal de Adição de Nível */}
       {isAddNivelModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
@@ -602,16 +1047,17 @@ const AreasPage: React.FC = () => {
                 e.preventDefault();
                 const formData = new FormData(e.target as HTMLFormElement);
                 const data = {
-                  cod_unidade: editingItem?.id,
-                  descricao: formData.get("descricao"),
+                  cod_unidade: editingItem?.id, // Associa o nível à unidade sendo editada
+                  cod_nivel: formData.get("cod_nivel"), // Apenas o código do nível
                 };
                 handleAdd("niveis", data);
               }}
             >
+              {/* Campo para o código do nível */}
               <input
                 type="text"
-                name="descricao"
-                placeholder="Descrição do Nível"
+                name="cod_nivel"
+                placeholder="Código do Nível"
                 className="border p-2 mb-2 w-full"
                 required
               />
@@ -631,8 +1077,10 @@ const AreasPage: React.FC = () => {
           </div>
         </div>
       )}
+      
     </>
   );
 };
+
 
 export default AreasPage;

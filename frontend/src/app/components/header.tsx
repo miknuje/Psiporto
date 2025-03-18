@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Menu, X, ChevronDown } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation"
 import Image from "next/image";
 
@@ -35,6 +36,10 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [isMenuOpen])
 
+  const router = useRouter();
+  const handleLogin = () => {
+    router.push("/login");
+  };
   // Close mobile menu on route change
   useEffect(() => {
     setIsMenuOpen(false)
@@ -99,7 +104,7 @@ export default function Header() {
 
           {/* Desktop CTA Buttons */}
           <div className="hidden lg:flex items-center space-x-4">
-            <Button variant="outline" className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto">
+            <Button variant="outline" className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto" onClick={handleLogin}>
               Entrar
             </Button>
             <Button className="bg-orange-300 hover:bg-orange-500 text-white px-5 py-2 h-auto">Agendar Consulta</Button>
@@ -140,7 +145,7 @@ export default function Header() {
                 </Link>
               ))}
               <div className="pt-4 flex flex-col space-y-3">
-                <Button variant="outline" className="bg-orange-300 border-orange-300 text-white hover:bg-yellow-200 w-full">
+                <Button variant="outline" className="bg-orange-300 border-orange-300 text-white hover:bg-yellow-200 w-full" onClick={handleLogin}>
                   Entrar
                 </Button>
                 <Button className="bg-orange-300 hover:bg-orange-500 text-white w-full">Agendar Consulta</Button>

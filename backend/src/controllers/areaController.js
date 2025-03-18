@@ -35,6 +35,10 @@ exports.updateArea = async (req, res) => {
   try {
     const cod_area = req.params.cod_area;
     const updatedData = req.body;
+
+    console.log("cod_area:", cod_area);
+    console.log("updatedData:", updatedData);
+
     const result = await Area.update(cod_area, updatedData);
     if (result.modifiedCount === 0) {
       return res.status(404).json({ error: "Área não encontrada" });
