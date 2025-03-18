@@ -101,28 +101,33 @@ const AreasPage: React.FC = () => {
     .sort((a, b) => a.cod_unidade.localeCompare(b.cod_unidade));
 
     const filteredAreas = areas.filter(
-      (area) =>
-        (area.Nome && area.Nome.toLowerCase().includes(search.toLowerCase())) ||
-        (area.cod_area && area.cod_area.toLowerCase().includes(search.toLowerCase())) ||
-        nucleos.some(
+  (area) =>
+    (area.Nome && area.Nome.toLowerCase().includes(search.toLowerCase())) ||
+    (area.cod_area && area.cod_area.toLowerCase().includes(search.toLowerCase())) ||
+    nucleos.some(
+      (nucleo) =>
+        nucleo.cod_area === area.cod_area &&
+        ((nucleo.Nome && nucleo.Nome.toLowerCase().includes(search.toLowerCase())) ||
+          (nucleo.cod_nucleo && nucleo.cod_nucleo.toLowerCase().includes(search.toLowerCase())))
+    ) ||
+    unidadesComNiveis.some(
+      (unidade) =>
+        (nucleos.some(
           (nucleo) =>
             nucleo.cod_area === area.cod_area &&
-            (nucleo.Nome && nucleo.Nome.toLowerCase().includes(search.toLowerCase())) ||
-            (nucleo.cod_nucleo && nucleo.cod_nucleo.toLowerCase().includes(search.toLowerCase()))
+            nucleo.cod_nucleo === unidade.cod_nucleo
         ) ||
-        unidadesComNiveis.some(
-          (unidade) =>
-            (nucleos.some(
-              (nucleo) =>
-                nucleo.cod_area === area.cod_area &&
-                nucleo.cod_nucleo === unidade.cod_nucleo
-            ) ||
-              (unidade.cod_nucleo === null &&
-                unidade.cod_area === area.cod_area)) &&
-            (unidade.Nome && unidade.Nome.toLowerCase().includes(search.toLowerCase())) ||
-            (unidade.cod_unidade && unidade.cod_unidade.toLowerCase().includes(search.toLowerCase()))
+          (unidade.cod_nucleo === null &&
+            unidade.cod_area === area.cod_area)) &&
+        ((unidade.Nome && unidade.Nome.toLowerCase().includes(search.toLowerCase())) ||
+          (unidade.cod_unidade && unidade.cod_unidade.toLowerCase().includes(search.toLowerCase())) ||
+          unidade.niveis.some(
+            (nivel) =>
+              nivel.cod_nivel && nivel.cod_nivel.toLowerCase().includes(search.toLowerCase())
+          )
         )
-    );
+    )
+);
 
     const handleAdd = async (type: string, data: any) => {
       try {
@@ -646,7 +651,7 @@ const AreasPage: React.FC = () => {
           </div>
         </div>
       )}
-
+{/*Modal edição */}
 {isEditModalOpen && editingItem && (
   <div className="fixed inset-0 flex justify-center items-center">
     <div className="bg-white p-6 rounded-lg w-1/3 shadow-lg">
@@ -667,7 +672,7 @@ const AreasPage: React.FC = () => {
             updatedData.cod_area = formData.get("cod_area"); // Adiciona o campo cod_area para núcleos
           } else if (editingItem.type === "unidades") {
             const nucleoValue = formData.get("nucleo");
-            updatedData.cod_nucleo = nucleoValue === "null" ? null : nucleoValue;
+            updatedData.cod_nucleo = nucleoValue === "null" ? null : nucleoValue; // Define como null se "Sem núcleo" for selecionado
             updatedData.cod_area = formData.get("area");
           }
 
@@ -733,7 +738,7 @@ const AreasPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Núcleo (opcional)</label>
               <select
                 name="nucleo"
-                defaultValue={editingItem.data.cod_nucleo || "null"}
+                defaultValue={editingItem.data.cod_nucleo || "null"} // Define "null" como valor padrão se cod_nucleo for null
                 className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
               >
                 <option value="null">Sem núcleo</option>
@@ -949,9 +954,9 @@ const AreasPage: React.FC = () => {
           const data = {
             cod_unidade: formData.get("cod_unidade"),
             Nome: formData.get("Nome"),
-            cod_nucleo: nucleoValue === "null" ? null : nucleoValue,
+            cod_nucleo: nucleoValue === "null" ? null : nucleoValue, // Define como null se "Sem núcleo" for selecionado
             cod_area: editingItem?.type === "areas" ? editingItem?.id : formData.get("cod_area"),
-            isDeleted: false // Add this line
+            isDeleted: false,
           };
           handleAdd("unidades", data);
           setIsAddUnidadeModalOpen(false);
@@ -978,29 +983,23 @@ const AreasPage: React.FC = () => {
           />
         </div>
         
-        {editingItem?.type === "nucleos" ? (
-          <input type="hidden" name="cod_nucleo" value={editingItem.id} />
-        ) : (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Núcleo (opcional)</label>
-            <select
-              name="cod_nucleo"
-              className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
-            >
-              <option value="null">Sem núcleo</option>
-              {nucleos.map((nucleo) => (
-                <option 
-                  key={nucleo._id} 
-                  value={nucleo.cod_nucleo}
-                  selected={editingItem?.type === "nucleos" && editingItem.id === nucleo.cod_nucleo}
-                >
-                  {nucleo.Nome} ({nucleo.cod_nucleo})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        {/* Campo de seleção de núcleo (opcional) */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Núcleo (opcional)</label>
+          <select
+            name="cod_nucleo"
+            className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
+          >
+            <option value="null">Sem núcleo</option>
+            {nucleos.map((nucleo) => (
+              <option key={nucleo._id} value={nucleo.cod_nucleo}>
+                {nucleo.Nome} ({nucleo.cod_nucleo})
+              </option>
+            ))}
+          </select>
+        </div>
         
+        {/* Campo de seleção de área (obrigatório) */}
         {editingItem?.type !== "areas" && (
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Área</label>
