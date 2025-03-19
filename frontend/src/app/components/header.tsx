@@ -4,15 +4,25 @@ import { useState, useEffect } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Menu, X, ChevronDown } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
-import Image from "next/image";
+import Image from "next/image"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
+  const [isLoggedIn, setIsLoggedIn] = useState(false) // Estado para verificar se o usuário está logado
   const pathname = usePathname()
+  const router = useRouter()
+
+  // Verifica se o usuário está logado ao carregar o componente
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (token) {
+      setIsLoggedIn(true)
+    }
+  }, [])
 
   // Handle scroll effect for sticky header
   useEffect(() => {
@@ -36,10 +46,19 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [isMenuOpen])
 
-  const router = useRouter();
-  const handleLogin = () => {
-    router.push("/login");
-  };
+  // Função para lidar com o logout
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
+    setIsLoggedIn(false)
+    router.push("/login")
+  }
+
+  // Função para redirecionar para a página de mudança de senha
+  const handleChangePassword = () => {
+    router.push("/change-password")
+  }
+
   // Close mobile menu on route change
   useEffect(() => {
     setIsMenuOpen(false)
@@ -65,14 +84,14 @@ export default function Header() {
 
   return (
     <header
-    className={`bg-white shadow-sm sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "py-2" : "py-4"}`}
+      className={`bg-white shadow-sm sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "py-2" : "py-4"}`}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="text-2xl font-bold text-orange-500 font-poppins">
-            <Image
+              <Image
                 src="/images/logo.png" // Caminho da imagem
                 alt="PsiPorto Logo" // Texto alternativo
                 width={150} // Largura
@@ -104,10 +123,31 @@ export default function Header() {
 
           {/* Desktop CTA Buttons */}
           <div className="hidden lg:flex items-center space-x-4">
-            <Button variant="outline" className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto" onClick={handleLogin}>
-              Entrar
-            </Button>
-            <Button className="bg-orange-300 hover:bg-orange-500 text-white px-5 py-2 h-auto">Agendar Consulta</Button>
+            {!isLoggedIn ? (
+              <Button
+                variant="outline"
+                className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto"
+                onClick={() => router.push("/login")}
+              >
+                Entrar
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto"
+                  onClick={handleChangePassword}
+                >
+                  Mudar Password
+                </Button>
+                <Button
+                  className="bg-orange-300 hover:bg-orange-500 text-white px-5 py-2 h-auto"
+                  onClick={handleLogout}
+                >
+                  Sair
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button and Components Link */}
@@ -145,10 +185,31 @@ export default function Header() {
                 </Link>
               ))}
               <div className="pt-4 flex flex-col space-y-3">
-                <Button variant="outline" className="bg-orange-300 border-orange-300 text-white hover:bg-yellow-200 w-full" onClick={handleLogin}>
-                  Entrar
-                </Button>
-                <Button className="bg-orange-300 hover:bg-orange-500 text-white w-full">Agendar Consulta</Button>
+                {!isLoggedIn ? (
+                  <Button
+                    variant="outline"
+                    className="bg-orange-300 border-orange-300 text-white hover:bg-yellow-200 w-full"
+                    onClick={() => router.push("/login")}
+                  >
+                    Entrar
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="bg-orange-300 border-orange-300 text-white hover:bg-yellow-200 w-full"
+                      onClick={handleChangePassword}
+                    >
+                      Mudar Password
+                    </Button>
+                    <Button
+                      className="bg-orange-300 hover:bg-orange-500 text-white w-full"
+                      onClick={handleLogout}
+                    >
+                      Sair
+                    </Button>
+                  </>
+                )}
               </div>
             </nav>
           </div>

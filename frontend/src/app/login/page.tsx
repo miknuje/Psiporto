@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/app/components/ui/button";
@@ -15,16 +15,25 @@ const LoginPage: React.FC = () => {
   const router = useRouter();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: "",
-    password: ""
+    password: "",
   });
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Inicialmente true para exibir o loading
+
+  // Simula o carregamento inicial da página
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false); // Desativa o loading após 2 segundos (simulação)
+    }, 2000);
+
+    return () => clearTimeout(timer); // Limpa o timer ao desmontar o componente
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setCredentials(prev => ({
+    setCredentials((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -34,13 +43,19 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", credentials);
-      
-      // Store token or user data in localStorage or context
+      // Ajusta os nomes dos campos para maiúsculas
+      const payload = {
+        Email: credentials.email,
+        Password: credentials.password,
+      };
+
+      const response = await axios.post("http://localhost:5000/api/auth/login", payload);
+
+      // Armazena o token ou dados do usuário no localStorage ou contexto
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
-      
-      // Redirect to dashboard or home page
+
+      // Redireciona para a página de áreas
       router.push("/areas");
     } catch (err: any) {
       setError(err.response?.data?.message || "Erro ao fazer login. Verifique suas credenciais.");
@@ -48,6 +63,20 @@ const LoginPage: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Exibir o loading enquanto a página está carregando ou o formulário está sendo processado
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-90 z-50">
+        <div className="text-center">
+          {/* Spinner animado */}
+          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+          {/* Mensagem de carregamento */}
+          <p className="text-lg font-semibold text-gray-700">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -107,7 +136,7 @@ const LoginPage: React.FC = () => {
                 Lembrar-me
               </label>
             </div>
-            <Link href="/forgot-password" className="text-orange-500 hover:text-orange-700">
+            <Link href="login/forgot-password" className="text-orange-500 hover:text-orange-700">
               Esqueceu a senha?
             </Link>
           </div>

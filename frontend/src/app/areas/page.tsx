@@ -54,6 +54,36 @@ const AreasPage: React.FC = () => {
   } | null>(null);
   const [loading, setLoading] = useState(true); 
 
+  const [formValues, setFormValues] = useState({
+    cod: "",
+    Nome: "",
+    cod_area: "",
+    cod_nucleo: "",
+  });
+  
+  // Atualize o estado do formulário quando o editingItem mudar
+  React.useEffect(() => {
+    if (editingItem) {
+      setFormValues({
+        cod: editingItem.type === "areas" ? editingItem.data.cod_area :
+             editingItem.type === "nucleos" ? editingItem.data.cod_nucleo :
+             editingItem.type === "unidades" ? editingItem.data.cod_unidade : "",
+        Nome: editingItem.data.Nome,
+        cod_area: editingItem.data.cod_area || "",
+        cod_nucleo: editingItem.data.cod_nucleo || "",
+      });
+    }
+  }, [editingItem]);
+  
+  // Atualize o estado do formulário quando as inputs mudarem
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormValues((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const fetchAllData = async () => {
     try {
       setLoading(true); // Ativa o estado de carregamento
@@ -661,19 +691,17 @@ const AreasPage: React.FC = () => {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          const formData = new FormData(e.target as HTMLFormElement);
           const updatedData: any = {
-            cod: formData.get("cod"),
-            Nome: formData.get("Nome"),
+            cod: formValues.cod,
+            Nome: formValues.Nome,
           };
 
           // Adicionar campos específicos com base no tipo
           if (editingItem.type === "nucleos") {
-            updatedData.cod_area = formData.get("cod_area"); // Adiciona o campo cod_area para núcleos
+            updatedData.cod_area = formValues.cod_area;
           } else if (editingItem.type === "unidades") {
-            const nucleoValue = formData.get("nucleo");
-            updatedData.cod_nucleo = nucleoValue === "null" ? null : nucleoValue; // Define como null se "Sem núcleo" for selecionado
-            updatedData.cod_area = formData.get("area");
+            updatedData.cod_nucleo = formValues.cod_nucleo === "null" ? null : formValues.cod_nucleo;
+            updatedData.cod_area = formValues.cod_area;
           }
 
           handleEdit(editingItem.type, editingItem.id, updatedData);
@@ -690,11 +718,8 @@ const AreasPage: React.FC = () => {
             <input
               type="text"
               name="cod"
-              defaultValue={
-                editingItem.type === "areas" ? editingItem.data.cod_area :
-                editingItem.type === "nucleos" ? editingItem.data.cod_nucleo :
-                editingItem.type === "unidades" ? editingItem.data.cod_unidade : ""
-              }
+              value={formValues.cod}
+              onChange={handleInputChange}
               className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
               required
             />
@@ -706,7 +731,8 @@ const AreasPage: React.FC = () => {
             <input
               type="text"
               name="Nome"
-              defaultValue={editingItem.data.Nome}
+              value={formValues.Nome}
+              onChange={handleInputChange}
               className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
               required
             />
@@ -718,7 +744,8 @@ const AreasPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Área</label>
               <select
                 name="cod_area"
-                defaultValue={editingItem.data.cod_area}
+                value={formValues.cod_area}
+                onChange={handleInputChange}
                 className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
                 required
               >
@@ -737,8 +764,9 @@ const AreasPage: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Núcleo (opcional)</label>
               <select
-                name="nucleo"
-                defaultValue={editingItem.data.cod_nucleo || "null"} // Define "null" como valor padrão se cod_nucleo for null
+                name="cod_nucleo"
+                value={formValues.cod_nucleo}
+                onChange={handleInputChange}
                 className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
               >
                 <option value="null">Sem núcleo</option>
@@ -751,8 +779,9 @@ const AreasPage: React.FC = () => {
 
               <label className="block text-sm font-medium text-gray-700 mb-1 mt-2">Área</label>
               <select
-                name="area"
-                defaultValue={editingItem.data.cod_area}
+                name="cod_area"
+                value={formValues.cod_area}
+                onChange={handleInputChange}
                 className="border border-orange-300 p-2 w-full rounded-lg focus:outline-none focus:border-orange-500"
                 required
               >
@@ -778,7 +807,10 @@ const AreasPage: React.FC = () => {
                     <span>{nucleo.Nome} ({nucleo.cod_nucleo})</span>
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => handleEditClick("nucleos", nucleo.cod_nucleo, nucleo)}
+                        onClick={() => {
+                          setIsEditModalOpen(false); // Fechar o modal de edição de área
+                          handleEditClick("nucleos", nucleo.cod_nucleo, nucleo);
+                        }}
                         className="bg-orange-300 hover:bg-orange-500 text-white px-3 py-1 h-auto"
                       >
                         Editar
@@ -799,7 +831,7 @@ const AreasPage: React.FC = () => {
             <Button
               onClick={() => {
                 setIsEditModalOpen(false);
-                setEditingItem({...editingItem});
+                setEditingItem({ ...editingItem });
                 setIsAddNucleoModalOpen(true); // Abrir modal de adição de núcleo
               }}
               className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
@@ -816,7 +848,10 @@ const AreasPage: React.FC = () => {
                     <span>{unidade.Nome} ({unidade.cod_unidade})</span>
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => handleEditClick("unidades", unidade.cod_unidade, unidade)}
+                        onClick={() => {
+                          setIsEditModalOpen(false); // Fechar o modal de edição de área
+                          handleEditClick("unidades", unidade.cod_unidade, unidade);
+                        }}
                         className="bg-orange-300 hover:bg-orange-500 text-white px-3 py-1 h-auto"
                       >
                         Editar
@@ -837,7 +872,7 @@ const AreasPage: React.FC = () => {
             <Button
               onClick={() => {
                 setIsEditModalOpen(false);
-                setEditingItem({...editingItem});
+                setEditingItem({ ...editingItem });
                 setIsAddUnidadeModalOpen(true); // Abrir modal de adição de unidade
               }}
               className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
@@ -859,7 +894,10 @@ const AreasPage: React.FC = () => {
                     <span>{unidade.Nome} ({unidade.cod_unidade})</span>
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => handleEditClick("unidades", unidade.cod_unidade, unidade)}
+                        onClick={() => {
+                          setIsEditModalOpen(false); // Fechar o modal de edição de núcleo
+                          handleEditClick("unidades", unidade.cod_unidade, unidade);
+                        }}
                         className="bg-orange-300 hover:bg-orange-500 text-white px-3 py-1 h-auto"
                       >
                         Editar
@@ -880,7 +918,7 @@ const AreasPage: React.FC = () => {
             <Button
               onClick={() => {
                 setIsEditModalOpen(false);
-                setEditingItem({...editingItem});
+                setEditingItem({ ...editingItem });
                 setIsAddUnidadeModalOpen(true); // Abrir modal de adição de unidade
               }}
               className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
@@ -913,7 +951,10 @@ const AreasPage: React.FC = () => {
               )}
             </div>
             <Button
-              onClick={() => setIsAddNivelModalOpen(true)}
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setIsAddNivelModalOpen(true);
+              }}
               className="bg-green-300 hover:bg-green-500 text-white px-3 py-1 h-auto"
             >
               Adicionar Nível
