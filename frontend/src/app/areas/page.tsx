@@ -1,5 +1,6 @@
 "use client";
 
+import { withAuth } from "@/app/hooks/withAuth";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Header from "@/app/components/header";
@@ -52,7 +53,7 @@ const AreasPage: React.FC = () => {
     id: string;
     data: any;
   } | null>(null);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
 
   const [formValues, setFormValues] = useState({
     cod: "",
@@ -1200,4 +1201,4 @@ const AreasPage: React.FC = () => {
 };
 
 
-export default AreasPage;
+export default withAuth(AreasPage, ["TORVC"]);

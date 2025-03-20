@@ -1,6 +1,6 @@
 const express = require("express");
-const authController = require("../controllers/authController"); // Importe o controlador
-const authMiddleware = require("../middleware/authMiddleware"); // Middleware de autenticação
+const authController = require("../controllers/authController");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -15,5 +15,8 @@ router.post("/reset-password", authController.resetPassword);
 
 // Rota para mudança de senha (protegida por autenticação)
 router.post("/change-password", authMiddleware, authController.changePassword);
+
+// Rota para obter informações do usuário autenticado
+router.get("/me", authMiddleware, authController.getUserInfo);
 
 module.exports = router;

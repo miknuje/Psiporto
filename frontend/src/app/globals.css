@@ -19,6 +19,25 @@
   }
 }
 
+/* Adicione isso ao seu arquivo CSS ou dentro de um <style> no componente */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  th, td {
+    min-width: 120px; /* Ajuste conforme necessário */
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 90%;
+    margin: 5% auto;
+  }
+}
 body {
   background: #f0f8ff;
   color: #0a0a0a;

@@ -31,10 +31,11 @@ exports.login = async (req, res) => {
   
       // Gera um token JWT
       const token = jwt.sign(
-        { _id: user._id, Email: user.Email },
+        { _id: user._id, Email: user.Email, Cargo: user.Cargo },
         process.env.JWT_SECRET,
         { expiresIn: "1h" }
       );
+      
   
       // Retorna o token e informações do usuário (sem a senha)
       res.json({
@@ -108,3 +109,23 @@ exports.changePassword = async (req, res) => {
       res.status(500).json({ error: err.message });
     }
   };
+
+  exports.getUserInfo = async (req, res) => {
+    try {
+      // Buscar o usuário pelo ID armazenado no token
+      const user = await User.findById(req.user._id);
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+  
+      res.json({
+        _id: user._id,
+        Nome: user.Nome,
+        Email: user.Email,
+        Cargo: user.Cargo,
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Erro ao obter informações do usuário" });
+    }
+  };
+  

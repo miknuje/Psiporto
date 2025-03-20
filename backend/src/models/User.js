@@ -10,7 +10,7 @@ class User {
 
   // Busca um usuário pelo ID
   static async findById(id) {
-    return await this.collection().findOne({ _id: new ObjectId(id) });
+    return await this.collection().findOne({ _id: new ObjectId(id) }, { projection: { Password: 0 } });
   }
 
   // Atualiza um usuário pelo ID e retorna o documento atualizado
