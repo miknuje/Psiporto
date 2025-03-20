@@ -12,19 +12,27 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
-  const [isLoggedIn, setIsLoggedIn] = useState(false) // Estado para verificar se o usuário está logado
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userName, setUserName] = useState("")
   const pathname = usePathname()
   const router = useRouter()
 
-  // Verifica se o usuário está logado ao carregar o componente
+  // Função para extrair o primeiro e o último nome
+  const getFirstAndLastName = (fullName: string) => {
+    const names = fullName.split(" ")
+    if (names.length === 1) return names[0] // Caso só tenha um nome
+    return `${names[0]} ${names[names.length - 1]}` // Primeiro e último nome
+  }
+
   useEffect(() => {
     const token = localStorage.getItem("token")
-    if (token) {
+    const user = localStorage.getItem("user")
+    if (token && user) {
       setIsLoggedIn(true)
+      setUserName(JSON.parse(user).Nome)
     }
   }, [])
 
-  // Handle scroll effect for sticky header
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10)
@@ -34,7 +42,6 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: any) => {
       if (isMenuOpen && !e.target.closest(".mobile-menu-container")) {
@@ -46,7 +53,6 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [isMenuOpen])
 
-  // Função para lidar com o logout
   const handleLogout = () => {
     localStorage.removeItem("token")
     localStorage.removeItem("user")
@@ -54,12 +60,10 @@ export default function Header() {
     router.push("/login")
   }
 
-  // Função para redirecionar para a página de mudança de senha
   const handleChangePassword = () => {
     router.push("/change-password")
   }
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsMenuOpen(false)
   }, [])
@@ -88,20 +92,18 @@ export default function Header() {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
-          {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="text-2xl font-bold text-orange-500 font-poppins">
               <Image
-                src="/images/logo.png" // Caminho da imagem
-                alt="PsiPorto Logo" // Texto alternativo
-                width={150} // Largura
-                height={50} // Altura
+                src="/images/logo.png"
+                alt="PsiPorto Logo"
+                width={150}
+                height={50}
                 className="object-contain"
               />
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
             {navItems.map((item) => (
               <Link
@@ -121,27 +123,27 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Desktop CTA Buttons */}
           <div className="hidden lg:flex items-center space-x-4">
             {!isLoggedIn ? (
               <Button
                 variant="outline"
-                className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto"
+                className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-4 py-2 text-sm"
                 onClick={() => router.push("/login")}
               >
                 Entrar
               </Button>
             ) : (
               <>
+                <span className="text-gray-600">Bem-vindo, {getFirstAndLastName(userName)}</span>
                 <Button
                   variant="outline"
-                  className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto"
+                  className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-4 py-2 text-sm"
                   onClick={handleChangePassword}
                 >
                   Mudar Password
                 </Button>
                 <Button
-                  className="bg-orange-300 hover:bg-orange-500 text-white px-5 py-2 h-auto"
+                  className="bg-orange-300 hover:bg-orange-500 text-white px-4 py-2 text-sm"
                   onClick={handleLogout}
                 >
                   Sair
@@ -150,7 +152,6 @@ export default function Header() {
             )}
           </div>
 
-          {/* Mobile Menu Button and Components Link */}
           <div className="flex items-center lg:hidden space-x-3">
             <Link href="/test">
               <Button size="sm" variant="secondary" className="bg-orange-300 text-white hover:bg-orange-500 mr-2">
@@ -169,7 +170,6 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="lg:hidden mt-4 py-4 border-t mobile-menu-container">
             <nav className="flex flex-col space-y-4">
@@ -188,22 +188,23 @@ export default function Header() {
                 {!isLoggedIn ? (
                   <Button
                     variant="outline"
-                    className="bg-orange-300 border-orange-300 text-white hover:bg-yellow-200 w-full"
+                    className="bg-orange-300 border-orange-300 text-white hover:bg-yellow-200 w-full text-sm py-2"
                     onClick={() => router.push("/login")}
                   >
                     Entrar
                   </Button>
                 ) : (
                   <>
+                    <span className="text-gray-600 text-center">Bem-vindo, {getFirstAndLastName(userName)}</span>
                     <Button
                       variant="outline"
-                      className="bg-orange-300 border-orange-300 text-white hover:bg-yellow-200 w-full"
+                      className="bg-orange-300 border-orange-300 text-white hover:bg-yellow-200 w-full text-sm py-2"
                       onClick={handleChangePassword}
                     >
                       Mudar Password
                     </Button>
                     <Button
-                      className="bg-orange-300 hover:bg-orange-500 text-white w-full"
+                      className="bg-orange-300 hover:bg-orange-500 text-white w-full text-sm py-2"
                       onClick={handleLogout}
                     >
                       Sair

@@ -21,6 +21,12 @@ export default function ChangePassword() {
     setSuccess(null)
 
     // Validação básica
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError("Todos os campos são obrigatórios.")
+      setIsLoading(false)
+      return
+    }
+
     if (newPassword !== confirmPassword) {
       setError("A nova senha e a confirmação não coincidem.")
       setIsLoading(false)
@@ -28,7 +34,6 @@ export default function ChangePassword() {
     }
 
     try {
-      // Obtém o token do localStorage
       const token = localStorage.getItem("token")
       if (!token) {
         throw new Error("Usuário não autenticado")
@@ -40,19 +45,21 @@ export default function ChangePassword() {
         { currentPassword, newPassword },
         {
           headers: {
-            Authorization: `Bearer ${token}`, // Inclui o token no cabeçalho
+            Authorization: `Bearer ${token}`,
           },
         }
       )
 
-      // Exibe mensagem de sucesso
       setSuccess("Senha alterada com sucesso!")
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
 
+      // Logout automático após 2 segundos
       setTimeout(() => {
-        router.push("./")
+        localStorage.removeItem("token")
+        localStorage.removeItem("user")
+        router.push("/login")
       }, 2000)
     } catch (err: any) {
       setError(err.response?.data?.message || "Erro ao alterar a senha. Tente novamente.")

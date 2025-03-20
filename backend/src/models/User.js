@@ -13,6 +13,9 @@ class User {
     return await this.collection().findOne({ _id: new ObjectId(id) }, { projection: { Password: 0 } });
   }
 
+  static async findByIdChange(id) {
+    return await this.collection().findOne({ _id: new ObjectId(id) }, { projection: { Password: 1 } });
+  }
   // Atualiza um usuário pelo ID e retorna o documento atualizado
   static async findByIdAndUpdate(id, updateData) {
     return await this.collection().findOneAndUpdate(

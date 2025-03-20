@@ -9,14 +9,15 @@ module.exports = async (req, res, next) => {
   }
 
   try {
-    // Remove "Bearer " do token
     const decoded = jwt.verify(token.replace("Bearer ", ""), process.env.JWT_SECRET);
-    req.user = decoded; // Armazena os dados do usuário no request
+    if (decoded.exp < Date.now() / 1000) {
+      return res.status(401).json({ error: "Token expirado." });
+    }
+    req.user = decoded;
 
-    // Busca o usuário no banco de dados
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id, { projection: { Password: 0, resetToken: 0, resetTokenExpiry: 0 } });
     if (!user) {
-      return res.status(403).json({ error: "Usuário não encontrado." });
+      return res.status(403).json({ error: "Utilizador não encontrado." });
     }
 
     next();

@@ -31,11 +31,11 @@ exports.login = async (req, res) => {
   
       // Gera um token JWT
       const token = jwt.sign(
-        { _id: user._id, Email: user.Email, Cargo: user.Cargo },
+        { _id: user._id.toString(), Email: user.Email, Cargo: user.Cargo },
         process.env.JWT_SECRET,
         { expiresIn: "1h" }
       );
-      
+
   
       // Retorna o token e informações do usuário (sem a senha)
       res.json({
@@ -82,33 +82,42 @@ exports.resetPassword = async (req, res) => {
 };
 
 exports.changePassword = async (req, res) => {
-    const { currentPassword, newPassword } = req.body;
-    const userId = req.user._id; // Obtém o ID do usuário a partir do token JWT
-  
-    try {
-      // Busca o usuário no banco de dados
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ error: "Usuário não encontrado" });
-      }
-  
-      // Valida a senha atual
-      const isValidPassword = await bcrypt.compare(currentPassword, user.Password);
-      if (!isValidPassword) {
-        return res.status(401).json({ error: "Senha atual incorreta" });
-      }
-  
-      // Gera o hash da nova senha
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-  
-      // Atualiza a senha do usuário
-      await User.findByIdAndUpdate(userId, { Password: hashedPassword });
-  
-      res.json({ message: "Senha alterada com sucesso" });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user._id;
+
+  try {
+    const user = await User.findByIdChange(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
     }
-  };
+
+    // Verifica se a senha atual foi fornecida
+    if (!currentPassword) {
+      return res.status(400).json({ error: "Senha atual é obrigatória" });
+    }
+
+    // Verifica se o hash da senha armazenada existe
+    if (!user.Password) {
+      return res.status(500).json({ error: "Erro interno: Hash da senha não encontrado" });
+    }
+
+    // Compara a senha atual com o hash armazenado
+    const isValidPassword = await bcrypt.compare(currentPassword, user.Password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: "Senha atual incorreta" });
+    }
+
+    // Gera o hash da nova senha
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Atualiza a senha do usuário
+    await User.findByIdAndUpdate(userId, { Password: hashedPassword });
+
+    res.json({ message: "Senha alterada com sucesso" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
   exports.getUserInfo = async (req, res) => {
     try {
