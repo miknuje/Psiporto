@@ -1,82 +1,74 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/app/components/ui/button"
-import { Menu, X, ChevronDown } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { usePathname } from "next/navigation"
-import Image from "next/image"
+import { useState, useEffect } from "react";
+import { Button } from "@/app/components/ui/button";
+import { Menu, X, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 export default function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [activeDropdown, setActiveDropdown] = useState(null)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [userName, setUserName] = useState("")
-  const pathname = usePathname()
-  const router = useRouter()
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
+  const pathname = usePathname();
+  const router = useRouter();
 
   // Função para extrair o primeiro e o último nome
   const getFirstAndLastName = (fullName: string) => {
-    const names = fullName.split(" ")
-    if (names.length === 1) return names[0] // Caso só tenha um nome
-    return `${names[0]} ${names[names.length - 1]}` // Primeiro e último nome
-  }
+    const names = fullName.split(" ");
+    if (names.length === 1) return names[0]; // Caso só tenha um nome
+    return `${names[0]} ${names[names.length - 1]}`; // Primeiro e último nome
+  };
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    const user = localStorage.getItem("user")
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
     if (token && user) {
-      setIsLoggedIn(true)
-      setUserName(JSON.parse(user).Nome)
+      setIsLoggedIn(true);
+      setUserName(JSON.parse(user).Nome);
     }
-  }, [])
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10)
-    }
-
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: any) => {
       if (isMenuOpen && !e.target.closest(".mobile-menu-container")) {
-        setIsMenuOpen(false)
+        setIsMenuOpen(false);
       }
-    }
+    };
 
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [isMenuOpen])
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMenuOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
-    setIsLoggedIn(false)
-    router.push("/login")
-  }
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setIsLoggedIn(false);
+    router.push("/login");
+  };
 
   const handleChangePassword = () => {
-    router.push("/change-password")
-  }
+    router.push("/change-password");
+  };
 
   useEffect(() => {
-    setIsMenuOpen(false)
-  }, [])
+    setIsMenuOpen(false);
+  }, []);
 
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   const isActive = (path: string) => {
-    return pathname === path ? "text-orange-500 font-medium" : "text-gray-600 hover:text-orange-500"
-  }
+    return pathname === path
+      ? "text-orange-500 font-medium"
+      : "text-gray-600 hover:text-orange-500";
+  };
 
   const toggleDropdown = (name: any) => {
-    setActiveDropdown(activeDropdown === name ? null : name)
-  }
+    setActiveDropdown(activeDropdown === name ? null : name);
+  };
 
   const navItems = [
     { name: "Áreas", path: "/areas" },
@@ -84,12 +76,10 @@ export default function Header() {
     { name: "Candidatos", path: "#candidatos" },
     { name: "Sumários", path: "#sumarios" },
     { name: "Sessões", path: "#sessoes" },
-  ]
+  ];
 
   return (
-    <header
-      className={`bg-white shadow-sm sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "py-2" : "py-4"}`}
-    >
+    <header className="bg-white shadow-sm sticky top-0 z-50 py-4">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -217,5 +207,5 @@ export default function Header() {
         )}
       </div>
     </header>
-  )
+  );
 }

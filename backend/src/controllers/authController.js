@@ -78,9 +78,20 @@ exports.forgotPassword = async (req, res) => {
       from: process.env.EMAIL_USER,
       to: Email,
       subject: "Recuperação de Senha",
-      html: `<p>Você solicitou a recuperação de senha. Clique no link abaixo para redefinir sua senha:</p>
-             <p><a href="${resetLink}">Redefinir Senha</a></p>
-             <p>Se você não solicitou isso, ignore este e-mail.</p>`,
+      html: `<div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+          <h2 style="color: #ff6f61; text-align: center;">Recuperação de Senha</h2>
+          <p>Olá,</p>
+          <p>Você solicitou a recuperação de senha da Psiporto. Clique no botão abaixo para redefinir sua senha:</p>
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="${resetLink}" style="background-color: #ff6f61; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-size: 16px;">
+              Redefinir Senha
+            </a>
+          </div>
+          <p>Se você não solicitou isso, ignore este e-mail.</p>
+          <p style="font-size: 12px; color: #777; text-align: center;">
+            Este é um e-mail automático, por favor não responda.
+          </p>
+        </div>`,
     };
 
     await transporter.sendMail(mailOptions);
