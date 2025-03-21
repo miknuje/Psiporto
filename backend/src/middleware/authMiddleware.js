@@ -2,14 +2,14 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 module.exports = async (req, res, next) => {
-  const token = req.header("Authorization");
+  const resetToken = req.header("Authorization");
 
-  if (!token) {
+  if (!resetToken) {
     return res.status(401).json({ error: "Acesso negado. Token não fornecido." });
   }
 
   try {
-    const decoded = jwt.verify(token.replace("Bearer ", ""), process.env.JWT_SECRET);
+    const decoded = jwt.verify(resetToken.replace("Bearer ", ""), process.env.JWT_SECRET);
     if (decoded.exp < Date.now() / 1000) {
       return res.status(401).json({ error: "Token expirado." });
     }

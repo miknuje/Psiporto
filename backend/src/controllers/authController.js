@@ -1,3 +1,4 @@
+const nodemailer = require("nodemailer"); 
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -55,31 +56,58 @@ exports.login = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   const { Email } = req.body;
 
+  if (!Email) {
+    return res.status(400).json({ error: "E-mail é obrigatório" });
+  }
+
   try {
-    // Gera um token de redefinição de senha
     const resetToken = await User.generatePasswordResetToken(Email);
 
-    // Aqui você pode enviar o token por e-mail (simulação)
-    console.log(`Token de redefinição de senha para ${Email}: ${resetToken}`);
+    // Substitua pela URL do seu frontend
+    const resetLink = `http://localhost:3000/reset-password?token=${resetToken}&email=${encodeURIComponent(Email)}`;
 
-    res.json({ message: "Token de redefinição de senha enviado por e-mail", resetToken });
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: Email,
+      subject: "Recuperação de Senha",
+      html: `<p>Você solicitou a recuperação de senha. Clique no link abaixo para redefinir sua senha:</p>
+             <p><a href="${resetLink}">Redefinir Senha</a></p>
+             <p>Se você não solicitou isso, ignore este e-mail.</p>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: "Um e-mail com instruções foi enviado para o seu endereço." });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Função para redefinir a senha
 exports.resetPassword = async (req, res) => {
-  const { Email, token, newPassword } = req.body;
+  console.log("Corpo da requisição recebido:", req.body); // <-- Adicione este log
+
+  const { Email, resetToken, newPassword } = req.body;
+
+  if (!Email || !resetToken || !newPassword) {
+    return res.status(400).json({ error: "E-mail, token e nova senha são obrigatórios" });
+  }
 
   try {
-    // Redefine a senha do usuário
-    await User.resetPassword(Email, token, newPassword);
-    res.json({ message: "Senha redefinida com sucesso" });
+    await User.resetPassword(Email, resetToken, newPassword);
+    res.json({ message: "Senha redefinida com sucesso." });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   }
 };
+
 
 exports.changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;

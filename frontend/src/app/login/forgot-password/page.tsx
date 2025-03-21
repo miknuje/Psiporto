@@ -28,7 +28,7 @@ const ForgotPasswordPage: React.FC = () => {
 
     try {
       // Simula uma requisição para recuperar a senha
-      await axios.post("http://localhost:5000/api/auth/forgot-password", { email });
+      await axios.post("http://localhost:5000/api/auth/forgot-password", { Email: email });
       setMessage("Um e-mail com instruções foi enviado para o seu endereço.");
     } catch (err: any) {
       setError(err.response?.data?.message || "Erro ao enviar o e-mail. Verifique o endereço fornecido.");

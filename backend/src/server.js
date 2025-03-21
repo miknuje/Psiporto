@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({ origin: "http://localhost:3000" })); // Permite requisições do frontend
 app.use(express.json()); // Habilita o parsing de JSON no corpo das requisições
+app.use(express.urlencoded({ extended: true })); 
 
 // Conectar ao MongoDB
 connectDB();
