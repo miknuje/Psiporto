@@ -175,17 +175,17 @@ const PsiPortoPage: React.FC = () => {
     return inscricoes.filter(inscricao => 
       Object.values(inscricao).some(
         value => value && value.toString().toLowerCase().includes(lowerSearch)
-    ));
+      )
+    );
   };
 
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-90 z-50">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto">
+          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
           <p className="text-lg font-semibold text-gray-700">Carregando...</p>
         </div>
-      </div>
       </div>
     );
   }
@@ -195,7 +195,7 @@ const PsiPortoPage: React.FC = () => {
       <Header />
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4 text-orange-500">
-          Candidatos Gestão PsiPorto
+          Gestão PsiPorto
         </h1>
         
         <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
