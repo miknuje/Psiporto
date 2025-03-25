@@ -6,7 +6,6 @@ import axios from "axios";
 import Header from "@/app/components/header";
 import { Button } from "@/app/components/ui/button";
 
-// Interfaces
 interface Diagnostico {
   _id: string;
   cod_diag: number;
@@ -50,58 +49,12 @@ interface Candidato {
   OBS: string;
 }
 
-// Form interfaces
-interface FormInscricao {
-  sigo: number;
-  cod_inscricao: number;
-  Nome: string;
-  Telefone: string;
-  Email: string;
-  NIF: string;
-  Habilitações: string;
-  "Nº DOC ID": string;
-  NISS: string;
-  "Data nascimento": string;
-  "Situação face ao emprego": string;
-  "Data desemprego": string;
-  Qualificações: string;
-  "Data Inscrição": string;
-  "Cod postal": string;
-  Genero: string;
-  Localidade: string;
-  Morada: string;
-  "Tipo DOC ID": string;
-}
-
-interface FormDiagnostico {
-  sigo: number;
-  cod_diag: number;
-  PIE: boolean;
-  Contrato: boolean;
-  "Nível a obter": string;
-  Modalidade: string;
-}
-
-interface FormCandidato {
-  sigo: number;
-  Portfolio: boolean;
-  Grelhas_Professores: boolean;
-  CC: boolean;
-  CH: boolean;
-  OBS: string;
-}
-
-type FormValues = FormInscricao | FormDiagnostico | FormCandidato;
-
 const PsiPortoPage: React.FC = () => {
-  // Data states
   const [diagnosticos, setDiagnosticos] = useState<Diagnostico[]>([]);
   const [inscricoes, setInscricoes] = useState<Inscricao[]>([]);
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-
-  // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<{
@@ -110,25 +63,19 @@ const PsiPortoPage: React.FC = () => {
     data: any;
   } | null>(null);
   const [modalType, setModalType] = useState<"inscricao" | "candidato" | "diagnostico">("inscricao");
-
-  // Sequence numbers
   const [nextCodInscricao, setNextCodInscricao] = useState(0);
-  const [nextCodDiag, setNextCodDiag] = useState(0);
 
-  // Form state
-  const [formValues, setFormValues] = useState<FormValues>({
+  const [formValues, setFormValues] = useState({
+    // Common fields
     sigo: 0,
+    // Diagnostico fields
+    cod_diag: 0,
+    PIE: false,
+    Contrato: false,
+    "Nível a obter": "",
+    Modalidade: "",
+    // Inscricao fields
     cod_inscricao: 0,
-    Nome: "",
-    Telefone: "",
-    Email: "",
-    NIF: ""
-  } as FormValues);
-
-  // Initial form values
-  const getInitialInscricaoValues = (sigo?: number): FormInscricao => ({
-    sigo: sigo || 0,
-    cod_inscricao: nextCodInscricao,
     Nome: "",
     Telefone: "",
     Email: "",
@@ -145,20 +92,8 @@ const PsiPortoPage: React.FC = () => {
     Genero: "",
     Localidade: "",
     Morada: "",
-    "Tipo DOC ID": ""
-  });
-
-  const getInitialDiagnosticoValues = (sigo?: number): FormDiagnostico => ({
-    sigo: sigo || 0,
-    cod_diag: nextCodDiag,
-    PIE: false,
-    Contrato: false,
-    "Nível a obter": "",
-    Modalidade: ""
-  });
-
-  const getInitialCandidatoValues = (sigo?: number): FormCandidato => ({
-    sigo: sigo || 0,
+    "Tipo DOC ID": "",
+    // Candidato fields
     Portfolio: false,
     Grelhas_Professores: false,
     CC: false,
@@ -166,123 +101,47 @@ const PsiPortoPage: React.FC = () => {
     OBS: ""
   });
 
-  // Fetch all data
   const fetchAllData = async () => {
     try {
       setLoading(true);
+      
+      // Primeiro busca os dados principais
       const [diagRes, inscRes, candRes] = await Promise.all([
         axios.get("http://localhost:5000/api/diagnosticos"),
         axios.get("http://localhost:5000/api/inscricoes"),
         axios.get("http://localhost:5000/api/candidatos")
       ]);
-  
+      
       setDiagnosticos(diagRes.data);
       setInscricoes(inscRes.data);
       setCandidatos(candRes.data);
       
-      // Calculate next codes
-      if (inscRes.data.length > 0) {
-        const maxCod = Math.max(...inscRes.data.map((i: Inscricao) => i.cod_inscricao));
-        setNextCodInscricao(maxCod + 1);
-      } else {
-        setNextCodInscricao(1);
-      }
-  
-      if (diagRes.data.length > 0) {
-        const maxDiag = Math.max(...diagRes.data.map((d: Diagnostico) => d.cod_diag));
-        setNextCodDiag(maxDiag + 1);
-      } else {
-        setNextCodDiag(1);
+      // Depois tenta buscar o último código de inscrição
+      try {
+        const lastInscRes = await axios.get("http://localhost:5000/api/inscricoes/last");
+        const lastCodInscricao = lastInscRes.data?.cod_inscricao || 0;
+        setNextCodInscricao(lastCodInscricao + 1);
+      } catch (error) {
+        console.warn("Não foi possível obter o último código de inscrição, usando fallback");
+        // Fallback: calcula baseado nos dados já carregados
+        if (inscRes.data.length > 0) {
+          const maxCod = Math.max(...inscRes.data.map((i: Inscricao) => i.cod_inscricao));
+          setNextCodInscricao(maxCod + 1);
+        } else {
+          setNextCodInscricao(1);
+        }
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Erro ao buscar dados:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Open add modal
-  const openAddModal = (type: "inscricao" | "candidato" | "diagnostico", sigo?: number) => {
-    setModalType(type);
-    setEditingItem(null);
+  useEffect(() => {
+    fetchAllData();
+  }, []);
 
-    switch (type) {
-      case "inscricao":
-        setFormValues(getInitialInscricaoValues(sigo));
-        break;
-      case "candidato":
-        setFormValues(getInitialCandidatoValues(sigo));
-        break;
-      case "diagnostico":
-        setFormValues(getInitialDiagnosticoValues(sigo));
-        break;
-    }
-
-    setIsAddModalOpen(true);
-  };
-
-  // Open edit modal
-  const openEditModal = (type: string, id: string, data: any) => {
-    setEditingItem({ type, id, data });
-    setModalType(
-      type === "inscricoes" ? "inscricao" :
-      type === "candidatos" ? "candidato" : "diagnostico"
-    );
-
-    // Create a clean form values object with only the relevant fields
-    const relevantFields: any = { sigo: data.sigo || 0 };
-    
-    if (type === "inscricoes") {
-      const inscricaoFields: FormInscricao = {
-        sigo: data.sigo,
-        cod_inscricao: data.cod_inscricao,
-        Nome: data.Nome,
-        Telefone: data.Telefone,
-        Email: data.Email,
-        NIF: data.NIF,
-        Habilitações: data.Habilitações,
-        "Nº DOC ID": data["Nº DOC ID"],
-        NISS: data.NISS,
-        "Data nascimento": data["Data nascimento"],
-        "Situação face ao emprego": data["Situação face ao emprego"],
-        "Data desemprego": data["Data desemprego"],
-        Qualificações: data.Qualificações,
-        "Data Inscrição": data["Data Inscrição"],
-        "Cod postal": data["Cod postal"],
-        Genero: data.Genero,
-        Localidade: data.Localidade,
-        Morada: data.Morada,
-        "Tipo DOC ID": data["Tipo DOC ID"]
-      };
-      setFormValues(inscricaoFields);
-    } 
-    else if (type === "diagnosticos") {
-      const diagnosticoFields: FormDiagnostico = {
-        sigo: data.sigo,
-        cod_diag: data.cod_diag,
-        PIE: data.PIE,
-        Contrato: data.Contrato,
-        "Nível a obter": data["Nível a obter"],
-        Modalidade: data.Modalidade
-      };
-      setFormValues(diagnosticoFields);
-    }
-    else if (type === "candidatos") {
-      const candidatoFields: FormCandidato = {
-        sigo: data.sigo,
-        Portfolio: data.Portfolio,
-        Grelhas_Professores: data.Grelhas_Professores,
-        CC: data.CC,
-        CH: data.CH,
-        OBS: data.OBS
-      };
-      setFormValues(candidatoFields);
-    }
-
-    setIsEditModalOpen(true);
-  };
-
-  // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
@@ -293,59 +152,71 @@ const PsiPortoPage: React.FC = () => {
     }));
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const type = editingItem?.type || 
-      (modalType === "inscricao" ? "inscricoes" : 
-       modalType === "candidato" ? "candidatos" : "diagnosticos");
-    
+  const handleAdd = async (type: string, data: any) => {
     try {
-      if (editingItem) {
-        await axios.put(`http://localhost:5000/api/${type}/${editingItem.id}`, formValues);
-      } else {
-        await axios.post(`http://localhost:5000/api/${type}`, formValues);
-      }
+      await axios.post(`http://localhost:5000/api/${type}`, data);
       fetchAllData();
       setIsAddModalOpen(false);
-      setIsEditModalOpen(false);
     } catch (error) {
-      console.error(`Error ${editingItem ? 'updating' : 'adding'} ${type}:`, error);
+      console.error(`Erro ao adicionar ${type}:`, error);
     }
   };
 
-  // Handle delete
+  const handleEdit = async (type: string, id: string, data: any) => {
+    try {
+      await axios.put(`http://localhost:5000/api/${type}/${id}`, data);
+      fetchAllData();
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error(`Erro ao editar ${type}:`, error);
+    }
+  };
+
   const handleDelete = async (type: string, id: string) => {
     if (!window.confirm("Tem certeza que deseja remover?")) return;
     try {
       await axios.delete(`http://localhost:5000/api/${type}/${id}`);
       fetchAllData();
     } catch (error) {
-      console.error(`Error removing ${type}:`, error);
+      console.error(`Erro ao remover ${type}:`, error);
     }
   };
 
-  // Filter data for search
+  const handleEditClick = (type: string, id: string, data: any) => {
+    setEditingItem({ type, id, data });
+    setFormValues({
+      ...formValues,
+      ...data
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const openAddModal = (type: "inscricao" | "candidato" | "diagnostico") => {
+    setModalType(type);
+    setEditingItem(null);
+    
+    // Reset form values but keep sigo if available
+    const newFormValues = {
+      ...formValues,
+      sigo: formValues.sigo || 0,
+      cod_inscricao: type === "inscricao" ? nextCodInscricao : formValues.cod_inscricao
+    };
+    
+    setFormValues(newFormValues);
+    setIsAddModalOpen(true);
+  };
+
   const filteredData = () => {
     const lowerSearch = search.toLowerCase();
     return inscricoes.filter(inscricao => 
       Object.values(inscricao).some(
         value => value && value.toString().toLowerCase().includes(lowerSearch)
-      ));
+      )
+    );
   };
 
-  // Get candidates without registration
+  // Combine candidatos without inscricoes with regular data
   const allCandidatos = [...candidatos.filter(c => !inscricoes.some(i => i.sigo === c.sigo))];
-
-  // Get diagnostics by SIGO
-  const getDiagnosticosBySigo = (sigo: number) => {
-    return diagnosticos.filter(d => d.sigo === sigo);
-  };
-
-  // Initial data fetch
-  useEffect(() => {
-    fetchAllData();
-  }, []);
 
   if (loading) {
     return (
@@ -362,9 +233,10 @@ const PsiPortoPage: React.FC = () => {
     <>
       <Header />
       <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4 text-orange-500">Gestão PsiPorto</h1>
+        <h1 className="text-2xl font-bold mb-4 text-orange-500">
+          Gestão PsiPorto
+        </h1>
         
-        {/* Search and buttons */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
           <input
             type="text"
@@ -391,7 +263,7 @@ const PsiPortoPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Registrations table */}
+        {/* Main table for inscricoes */}
         <div className="overflow-x-auto mb-8">
           <h2 className="text-xl font-semibold mb-2">Inscrições</h2>
           <table className="w-full border-collapse border border-gray-300">
@@ -400,14 +272,14 @@ const PsiPortoPage: React.FC = () => {
                 <th className="border border-gray-300 p-2">Nome</th>
                 <th className="border border-gray-300 p-2">Contacto</th>
                 <th className="border border-gray-300 p-2">Situação</th>
-                <th className="border border-gray-300 p-2">Diagnósticos</th>
+                <th className="border border-gray-300 p-2">Diagnóstico</th>
                 <th className="border border-gray-300 p-2">Candidato</th>
                 <th className="border border-gray-300 p-2">Ações</th>
               </tr>
             </thead>
             <tbody>
               {filteredData().map((inscricao) => {
-                const diagnosticosInscricao = getDiagnosticosBySigo(inscricao.sigo);
+                const diagnostico = diagnosticos.find(d => d.sigo === inscricao.sigo);
                 const candidato = candidatos.find(c => c.sigo === inscricao.sigo);
                 
                 return (
@@ -427,34 +299,39 @@ const PsiPortoPage: React.FC = () => {
                       )}
                     </td>
                     <td className="border p-2">
-                      <div className="space-y-2">
-                        {diagnosticosInscricao.map(diagnostico => (
-                          <div key={diagnostico._id} className="p-2 border rounded">
-                            <div className="font-medium">{diagnostico.Modalidade}</div>
-                            <div className="text-sm text-gray-500">Nível: {diagnostico["Nível a obter"]}</div>
-                            <div className="flex gap-1 mt-1">
-                              <Button
-                                onClick={() => openEditModal("diagnosticos", diagnostico._id, diagnostico)}
-                                className="bg-orange-300 hover:bg-orange-500 text-white px-2 py-1 text-xs"
-                              >
-                                Editar
-                              </Button>
-                              <Button
-                                onClick={() => handleDelete("diagnosticos", diagnostico._id)}
-                                className="bg-red-300 hover:bg-red-500 text-white px-2 py-1 text-xs"
-                              >
-                                Remover
-                              </Button>
-                            </div>
+                      {diagnostico ? (
+                        <>
+                          <div>{diagnostico.Modalidade}</div>
+                          <div className="text-sm text-gray-500">Nível: {diagnostico["Nível a obter"]}</div>
+                          <div className="flex gap-1 mt-1">
+                            <Button
+                              onClick={() => handleEditClick("diagnosticos", diagnostico._id, diagnostico)}
+                              className="bg-orange-300 hover:bg-orange-500 text-white px-2 py-1 text-xs"
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              onClick={() => handleDelete("diagnosticos", diagnostico._id)}
+                              className="bg-red-300 hover:bg-red-500 text-white px-2 py-1 text-xs"
+                            >
+                              Remover
+                            </Button>
                           </div>
-                        ))}
+                        </>
+                      ) : (
                         <Button
-                          onClick={() => openAddModal("diagnostico", inscricao.sigo)}
-                          className="bg-green-300 hover:bg-green-500 text-white px-2 py-1 text-xs mt-2"
+                          onClick={() => {
+                            setFormValues({
+                              ...formValues,
+                              sigo: inscricao.sigo
+                            });
+                            openAddModal("diagnostico");
+                          }}
+                          className="bg-green-300 hover:bg-green-500 text-white px-2 py-1 text-xs"
                         >
-                          Adicionar Diagnóstico
+                          Criar Diagnóstico
                         </Button>
-                      </div>
+                      )}
                     </td>
                     <td className="border p-2">
                       {candidato ? (
@@ -469,7 +346,7 @@ const PsiPortoPage: React.FC = () => {
                           )}
                           <div className="flex gap-1 mt-1">
                             <Button
-                              onClick={() => openEditModal("candidatos", candidato._id, candidato)}
+                              onClick={() => handleEditClick("candidatos", candidato._id, candidato)}
                               className="bg-orange-300 hover:bg-orange-500 text-white px-2 py-1 text-xs"
                             >
                               Editar
@@ -484,7 +361,13 @@ const PsiPortoPage: React.FC = () => {
                         </>
                       ) : (
                         <Button
-                          onClick={() => openAddModal("candidato", inscricao.sigo)}
+                          onClick={() => {
+                            setFormValues({
+                              ...formValues,
+                              sigo: inscricao.sigo
+                            });
+                            openAddModal("candidato");
+                          }}
                           className="bg-green-300 hover:bg-green-500 text-white px-2 py-1 text-xs"
                         >
                           Criar Candidato
@@ -494,7 +377,7 @@ const PsiPortoPage: React.FC = () => {
                     <td className="border p-2">
                       <div className="flex gap-2 justify-center">
                         <Button
-                          onClick={() => openEditModal("inscricoes", inscricao._id, inscricao)}
+                          onClick={() => handleEditClick("inscricoes", inscricao._id, inscricao)}
                           className="bg-orange-300 hover:bg-orange-500 text-white px-3 py-1"
                         >
                           Editar
@@ -514,7 +397,7 @@ const PsiPortoPage: React.FC = () => {
           </table>
         </div>
 
-        {/* Candidates without registration table */}
+        {/* Table for candidatos without inscricoes */}
         {allCandidatos.length > 0 && (
           <div className="overflow-x-auto">
             <h2 className="text-xl font-semibold mb-2">Candidatos Sem Inscrição</h2>
@@ -522,84 +405,55 @@ const PsiPortoPage: React.FC = () => {
               <thead>
                 <tr className="bg-gray-200">
                   <th className="border border-gray-300 p-2">SIGO</th>
-                  <th className="border border-gray-300 p-2">Diagnósticos</th>
                   <th className="border border-gray-300 p-2">Status</th>
                   <th className="border border-gray-300 p-2">Observações</th>
                   <th className="border border-gray-300 p-2">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {allCandidatos.map((candidato) => {
-                  const diagnosticosCandidato = getDiagnosticosBySigo(candidato.sigo);
-                  
-                  return (
-                    <tr key={candidato._id}>
-                      <td className="border p-2 text-center">{candidato.sigo}</td>
-                      <td className="border p-2">
-                        <div className="space-y-2">
-                          {diagnosticosCandidato.map(diagnostico => (
-                            <div key={diagnostico._id} className="p-2 border rounded">
-                              <div className="font-medium">{diagnostico.Modalidade}</div>
-                              <div className="text-sm text-gray-500">Nível: {diagnostico["Nível a obter"]}</div>
-                              <div className="flex gap-1 mt-1">
-                                <Button
-                                  onClick={() => openEditModal("diagnosticos", diagnostico._id, diagnostico)}
-                                  className="bg-orange-300 hover:bg-orange-500 text-white px-2 py-1 text-xs"
-                                >
-                                  Editar
-                                </Button>
-                                <Button
-                                  onClick={() => handleDelete("diagnosticos", diagnostico._id)}
-                                  className="bg-red-300 hover:bg-red-500 text-white px-2 py-1 text-xs"
-                                >
-                                  Remover
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                          <Button
-                            onClick={() => openAddModal("diagnostico", candidato.sigo)}
-                            className="bg-green-300 hover:bg-green-500 text-white px-2 py-1 text-xs mt-2"
-                          >
-                            Adicionar Diagnóstico
-                          </Button>
-                        </div>
-                      </td>
-                      <td className="border p-2">
-                        <div className="flex gap-2 justify-center">
-                          <span className={`inline-block w-3 h-3 rounded-full ${candidato.Portfolio ? 'bg-green-500' : 'bg-red-500'}`} title="Portfolio"></span>
-                          <span className={`inline-block w-3 h-3 rounded-full ${candidato.CC ? 'bg-green-500' : 'bg-red-500'}`} title="CC"></span>
-                          <span className={`inline-block w-3 h-3 rounded-full ${candidato.CH ? 'bg-green-500' : 'bg-red-500'}`} title="CH"></span>
-                        </div>
-                      </td>
-                      <td className="border p-2">
-                        {candidato.OBS || "-"}
-                      </td>
-                      <td className="border p-2">
-                        <div className="flex gap-2 justify-center">
-                          <Button
-                            onClick={() => openEditModal("candidatos", candidato._id, candidato)}
-                            className="bg-orange-300 hover:bg-orange-500 text-white px-3 py-1"
-                          >
-                            Editar
-                          </Button>
-                          <Button
-                            onClick={() => handleDelete("candidatos", candidato._id)}
-                            className="bg-red-300 hover:bg-red-500 text-white px-3 py-1"
-                          >
-                            Remover
-                          </Button>
-                          <Button
-                            onClick={() => openAddModal("inscricao", candidato.sigo)}
-                            className="bg-blue-300 hover:bg-blue-500 text-white px-3 py-1"
-                          >
-                            Criar Inscrição
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {allCandidatos.map((candidato) => (
+                  <tr key={candidato._id}>
+                    <td className="border p-2 text-center">{candidato.sigo}</td>
+                    <td className="border p-2">
+                      <div className="flex gap-2 justify-center">
+                        <span className={`inline-block w-3 h-3 rounded-full ${candidato.Portfolio ? 'bg-green-500' : 'bg-red-500'}`} title="Portfolio"></span>
+                        <span className={`inline-block w-3 h-3 rounded-full ${candidato.CC ? 'bg-green-500' : 'bg-red-500'}`} title="CC"></span>
+                        <span className={`inline-block w-3 h-3 rounded-full ${candidato.CH ? 'bg-green-500' : 'bg-red-500'}`} title="CH"></span>
+                      </div>
+                    </td>
+                    <td className="border p-2">
+                      {candidato.OBS || "-"}
+                    </td>
+                    <td className="border p-2">
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          onClick={() => handleEditClick("candidatos", candidato._id, candidato)}
+                          className="bg-orange-300 hover:bg-orange-500 text-white px-3 py-1"
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete("candidatos", candidato._id)}
+                          className="bg-red-300 hover:bg-red-500 text-white px-3 py-1"
+                        >
+                          Remover
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setFormValues({
+                              ...formValues,
+                              sigo: candidato.sigo
+                            });
+                            openAddModal("inscricao");
+                          }}
+                          className="bg-blue-300 hover:bg-blue-500 text-white px-3 py-1"
+                        >
+                          Criar Inscrição
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -620,7 +474,20 @@ const PsiPortoPage: React.FC = () => {
                     : "Adicionar Novo Diagnóstico"}
             </h2>
             
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const type = editingItem?.type || 
+                (modalType === "inscricao" ? "inscricoes" : 
+                 modalType === "candidato" ? "candidatos" : "diagnosticos");
+              
+              const data = { ...formValues };
+              
+              if (editingItem) {
+                handleEdit(type, editingItem.id, data);
+              } else {
+                handleAdd(type, data);
+              }
+            }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 {/* Common fields */}
                 <div>
@@ -632,19 +499,18 @@ const PsiPortoPage: React.FC = () => {
                     onChange={handleInputChange}
                     className="border border-orange-300 p-2 w-full rounded-lg"
                     required
-                    readOnly={!!editingItem || modalType === "diagnostico"}
                   />
                 </div>
 
                 {/* Fields for inscricao */}
-                {(modalType === "inscricao" || (editingItem && editingItem.type === "inscricoes")) && (
+                {(modalType === "inscricao" || (!isAddModalOpen && editingItem?.type === "inscricoes")) && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Código Inscrição</label>
                       <input
                         type="number"
                         name="cod_inscricao"
-                        value={(formValues as FormInscricao).cod_inscricao}
+                        value={formValues.cod_inscricao}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg bg-gray-100"
                         required
@@ -656,7 +522,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="Nome"
-                        value={(formValues as FormInscricao).Nome}
+                        value={formValues.Nome}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                         required
@@ -667,7 +533,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="Telefone"
-                        value={(formValues as FormInscricao).Telefone}
+                        value={formValues.Telefone}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                         required
@@ -678,7 +544,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="email"
                         name="Email"
-                        value={(formValues as FormInscricao).Email}
+                        value={formValues.Email}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                         required
@@ -689,7 +555,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="NIF"
-                        value={(formValues as FormInscricao).NIF}
+                        value={formValues.NIF}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                         required
@@ -700,7 +566,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="NISS"
-                        value={(formValues as FormInscricao).NISS}
+                        value={formValues.NISS}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       />
@@ -710,7 +576,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="date"
                         name="Data nascimento"
-                        value={(formValues as FormInscricao)["Data nascimento"]}
+                        value={formValues["Data nascimento"]}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       />
@@ -719,7 +585,7 @@ const PsiPortoPage: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Situação Emprego</label>
                       <select
                         name="Situação face ao emprego"
-                        value={(formValues as FormInscricao)["Situação face ao emprego"]}
+                        value={formValues["Situação face ao emprego"]}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       >
@@ -730,13 +596,13 @@ const PsiPortoPage: React.FC = () => {
                         <option value="Outro">Outro</option>
                       </select>
                     </div>
-                    {(formValues as FormInscricao)["Situação face ao emprego"] === "Desempregado" && (
+                    {formValues["Situação face ao emprego"] === "Desempregado" && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Data Desemprego</label>
                         <input
                           type="date"
                           name="Data desemprego"
-                          value={(formValues as FormInscricao)["Data desemprego"]}
+                          value={formValues["Data desemprego"]}
                           onChange={handleInputChange}
                           className="border border-orange-300 p-2 w-full rounded-lg"
                         />
@@ -747,7 +613,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="Habilitações"
-                        value={(formValues as FormInscricao).Habilitações}
+                        value={formValues.Habilitações}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       />
@@ -757,7 +623,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="Qualificações"
-                        value={(formValues as FormInscricao).Qualificações}
+                        value={formValues.Qualificações}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       />
@@ -767,7 +633,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="date"
                         name="Data Inscrição"
-                        value={(formValues as FormInscricao)["Data Inscrição"]}
+                        value={formValues["Data Inscrição"]}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       />
@@ -776,7 +642,7 @@ const PsiPortoPage: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Género</label>
                       <select
                         name="Genero"
-                        value={(formValues as FormInscricao).Genero}
+                        value={formValues.Genero}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       >
@@ -791,7 +657,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="Morada"
-                        value={(formValues as FormInscricao).Morada}
+                        value={formValues.Morada}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       />
@@ -801,7 +667,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="Cod postal"
-                        value={(formValues as FormInscricao)["Cod postal"]}
+                        value={formValues["Cod postal"]}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       />
@@ -811,7 +677,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="Localidade"
-                        value={(formValues as FormInscricao).Localidade}
+                        value={formValues.Localidade}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       />
@@ -821,7 +687,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="Tipo DOC ID"
-                        value={(formValues as FormInscricao)["Tipo DOC ID"]}
+                        value={formValues["Tipo DOC ID"]}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       />
@@ -831,7 +697,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="text"
                         name="Nº DOC ID"
-                        value={(formValues as FormInscricao)["Nº DOC ID"]}
+                        value={formValues["Nº DOC ID"]}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                       />
@@ -840,25 +706,24 @@ const PsiPortoPage: React.FC = () => {
                 )}
 
                 {/* Fields for diagnostico */}
-                {(modalType === "diagnostico" || (editingItem && editingItem.type === "diagnosticos")) && (
+                {(modalType === "diagnostico" || (!isAddModalOpen && editingItem?.type === "diagnosticos")) && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Código Diagnóstico</label>
                       <input
                         type="number"
                         name="cod_diag"
-                        value={(formValues as FormDiagnostico).cod_diag}
+                        value={formValues.cod_diag}
                         onChange={handleInputChange}
-                        className="border border-orange-300 p-2 w-full rounded-lg bg-gray-100"
+                        className="border border-orange-300 p-2 w-full rounded-lg"
                         required
-                        readOnly={isAddModalOpen}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Modalidade</label>
                       <select
                         name="Modalidade"
-                        value={(formValues as FormDiagnostico).Modalidade}
+                        value={formValues.Modalidade}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                         required
@@ -872,7 +737,7 @@ const PsiPortoPage: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Nível a Obter</label>
                       <select
                         name="Nível a obter"
-                        value={(formValues as FormDiagnostico)["Nível a obter"]}
+                        value={formValues["Nível a obter"]}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                         required
@@ -888,7 +753,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="checkbox"
                         name="PIE"
-                        checked={(formValues as FormDiagnostico).PIE}
+                        checked={formValues.PIE}
                         onChange={handleInputChange}
                         className="mr-2"
                       />
@@ -898,7 +763,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="checkbox"
                         name="Contrato"
-                        checked={(formValues as FormDiagnostico).Contrato}
+                        checked={formValues.Contrato}
                         onChange={handleInputChange}
                         className="mr-2"
                       />
@@ -908,13 +773,13 @@ const PsiPortoPage: React.FC = () => {
                 )}
 
                 {/* Fields for candidato */}
-                {(modalType === "candidato" || (editingItem && editingItem.type === "candidatos")) && (
+                {(modalType === "candidato" || (!isAddModalOpen && editingItem?.type === "candidatos")) && (
                   <>
                     <div className="flex items-center">
                       <input
                         type="checkbox"
                         name="Portfolio"
-                        checked={(formValues as FormCandidato).Portfolio}
+                        checked={formValues.Portfolio}
                         onChange={handleInputChange}
                         className="mr-2"
                       />
@@ -924,7 +789,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="checkbox"
                         name="Grelhas_Professores"
-                        checked={(formValues as FormCandidato).Grelhas_Professores}
+                        checked={formValues.Grelhas_Professores}
                         onChange={handleInputChange}
                         className="mr-2"
                       />
@@ -934,7 +799,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="checkbox"
                         name="CC"
-                        checked={(formValues as FormCandidato).CC}
+                        checked={formValues.CC}
                         onChange={handleInputChange}
                         className="mr-2"
                       />
@@ -944,7 +809,7 @@ const PsiPortoPage: React.FC = () => {
                       <input
                         type="checkbox"
                         name="CH"
-                        checked={(formValues as FormCandidato).CH}
+                        checked={formValues.CH}
                         onChange={handleInputChange}
                         className="mr-2"
                       />
@@ -954,7 +819,7 @@ const PsiPortoPage: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
                       <textarea
                         name="OBS"
-                        value={(formValues as FormCandidato).OBS}
+                        value={formValues.OBS}
                         onChange={handleInputChange}
                         className="border border-orange-300 p-2 w-full rounded-lg"
                         rows={3}

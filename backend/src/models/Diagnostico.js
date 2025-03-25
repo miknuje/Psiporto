@@ -9,6 +9,14 @@ class Diagnostico {
     return await this.collection().find().toArray();
   }
 
+  static async findLast() {
+    return await this.collection()
+      .find()
+      .sort({ cod_diag: -1 }) // Ordena por cod_diag em ordem decrescente
+      .limit(1) // Pega apenas o primeiro (maior código)
+      .next(); // Retorna o documento
+  }
+
   static async findById(id) {
     return await this.collection().findOne({ _id: id });
   }

@@ -46,6 +46,18 @@ exports.updateDiagnostico = async (req, res) => {
   }
 };
 
+exports.getLastDiagnostico = async (req, res) => {
+    try {
+      const lastDiag = await Diagnostico.findLast();
+      if (!lastDiag) {
+        return res.json({ cod_diag: 0 });
+      }
+      res.json(lastDiag);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  };
+
 exports.deleteDiagnostico = async (req, res) => {
   try {
     const id = req.params.id;

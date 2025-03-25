@@ -35,14 +35,7 @@ exports.getInscricaoById = async (req, res) => {
 
 exports.createInscricao = async (req, res) => {
     try {
-      const lastInscricao = await Inscricao.findLast();
-      const nextCodInscricao = (lastInscricao?.cod_inscricao || 0) + 1;
-      
-      const newInscricao = {
-        ...req.body,
-        cod_inscricao: nextCodInscricao
-      };
-  
+      const newInscricao = req.body;
       const result = await Inscricao.create(newInscricao);
       res.status(201).json(result);
     } catch (err) {
