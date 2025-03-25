@@ -71,6 +71,9 @@
     --color-green-300: oklch(0.871 0.15 154.449);
     --color-green-500: oklch(0.723 0.219 149.579);
     --color-green-700: oklch(0.527 0.154 150.069);
+    --color-blue-200: oklch(0.882 0.059 254.128);
+    --color-blue-300: oklch(0.809 0.105 251.813);
+    --color-blue-500: oklch(0.623 0.214 259.815);
     --color-gray-50: oklch(0.985 0.002 247.839);
     --color-gray-100: oklch(0.967 0.003 264.542);
     --color-gray-200: oklch(0.928 0.006 264.531);
@@ -356,6 +359,9 @@
   .inline-flex {
     display: inline-flex;
   }
+  .table {
+    display: table;
+  }
   .h-3 {
     height: calc(var(--spacing) * 3);
   }
@@ -529,6 +535,9 @@
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 1px;
   }
+  .border-blue-500 {
+    border-color: var(--color-blue-500);
+  }
   .border-current {
     border-color: currentColor;
   }
@@ -540,6 +549,9 @@
   }
   .border-gray-300 {
     border-color: var(--color-gray-300);
+  }
+  .border-green-500 {
+    border-color: var(--color-green-500);
   }
   .border-orange-300 {
     border-color: var(--color-orange-300);
@@ -555,6 +567,9 @@
   }
   .bg-black {
     background-color: var(--color-black);
+  }
+  .bg-blue-300 {
+    background-color: var(--color-blue-300);
   }
   .bg-gray-50 {
     background-color: var(--color-gray-50);
@@ -686,6 +701,9 @@
     --tw-font-weight: var(--font-weight-semibold);
     font-weight: var(--font-weight-semibold);
   }
+  .text-blue-500 {
+    color: var(--color-blue-500);
+  }
   .text-gray-400 {
     color: var(--color-gray-400);
   }
@@ -700,6 +718,9 @@
   }
   .text-gray-800 {
     color: var(--color-gray-800);
+  }
+  .text-green-500 {
+    color: var(--color-green-500);
   }
   .text-green-700 {
     color: var(--color-green-700);
@@ -797,6 +818,27 @@
       transition-property: all;
       transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
       transition-duration: var(--tw-duration, var(--default-transition-duration));
+    }
+  }
+  .hover\:bg-blue-200 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-blue-200);
+      }
+    }
+  }
+  .hover\:bg-blue-500 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-blue-500);
+      }
+    }
+  }
+  .hover\:bg-green-100 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-green-100);
+      }
     }
   }
   .hover\:bg-green-500 {

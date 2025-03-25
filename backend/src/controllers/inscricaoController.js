@@ -9,6 +9,18 @@ exports.getAllInscricoes = async (req, res) => {
   }
 };
 
+exports.getLastInscricao = async (req, res) => {
+    try {
+      const lastInscricao = await Inscricao.findLast();
+      if (!lastInscricao) {
+        return res.json({ cod_inscricao: 0 });
+      }
+      res.json(lastInscricao);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  };
+
 exports.getInscricaoById = async (req, res) => {
   try {
     const inscricao = await Inscricao.findById(req.params.id);
@@ -22,14 +34,21 @@ exports.getInscricaoById = async (req, res) => {
 };
 
 exports.createInscricao = async (req, res) => {
-  try {
-    const newInscricao = req.body;
-    const result = await Inscricao.create(newInscricao);
-    res.status(201).json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+    try {
+      const lastInscricao = await Inscricao.findLast();
+      const nextCodInscricao = (lastInscricao?.cod_inscricao || 0) + 1;
+      
+      const newInscricao = {
+        ...req.body,
+        cod_inscricao: nextCodInscricao
+      };
+  
+      const result = await Inscricao.create(newInscricao);
+      res.status(201).json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  };
 
 exports.updateInscricao = async (req, res) => {
   try {

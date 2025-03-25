@@ -5,6 +5,14 @@ class Inscricao {
     return getDB().collection("Inscricao");
   }
 
+  static async findLast() {
+    return await this.collection()
+      .find()
+      .sort({ cod_inscricao: -1 })
+      .limit(1)
+      .next();
+  }
+
   static async findAll() {
     return await this.collection().find().toArray();
   }

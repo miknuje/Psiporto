@@ -62,6 +62,8 @@ const PsiPortoPage: React.FC = () => {
     id: string;
     data: any;
   } | null>(null);
+  const [modalType, setModalType] = useState<"inscricao" | "candidato" | "diagnostico">("inscricao");
+  const [nextCodInscricao, setNextCodInscricao] = useState(0);
 
   const [formValues, setFormValues] = useState({
     // Common fields
@@ -102,14 +104,33 @@ const PsiPortoPage: React.FC = () => {
   const fetchAllData = async () => {
     try {
       setLoading(true);
+      
+      // Primeiro busca os dados principais
       const [diagRes, inscRes, candRes] = await Promise.all([
         axios.get("http://localhost:5000/api/diagnosticos"),
         axios.get("http://localhost:5000/api/inscricoes"),
         axios.get("http://localhost:5000/api/candidatos")
       ]);
+      
       setDiagnosticos(diagRes.data);
       setInscricoes(inscRes.data);
       setCandidatos(candRes.data);
+      
+      // Depois tenta buscar o último código de inscrição
+      try {
+        const lastInscRes = await axios.get("http://localhost:5000/api/inscricoes/last");
+        const lastCodInscricao = lastInscRes.data?.cod_inscricao || 0;
+        setNextCodInscricao(lastCodInscricao + 1);
+      } catch (error) {
+        console.warn("Não foi possível obter o último código de inscrição, usando fallback");
+        // Fallback: calcula baseado nos dados já carregados
+        if (inscRes.data.length > 0) {
+          const maxCod = Math.max(...inscRes.data.map((i: Inscricao) => i.cod_inscricao));
+          setNextCodInscricao(maxCod + 1);
+        } else {
+          setNextCodInscricao(1);
+        }
+      }
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
     } finally {
@@ -170,6 +191,21 @@ const PsiPortoPage: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
+  const openAddModal = (type: "inscricao" | "candidato" | "diagnostico") => {
+    setModalType(type);
+    setEditingItem(null);
+    
+    // Reset form values but keep sigo if available
+    const newFormValues = {
+      ...formValues,
+      sigo: formValues.sigo || 0,
+      cod_inscricao: type === "inscricao" ? nextCodInscricao : formValues.cod_inscricao
+    };
+    
+    setFormValues(newFormValues);
+    setIsAddModalOpen(true);
+  };
+
   const filteredData = () => {
     const lowerSearch = search.toLowerCase();
     return inscricoes.filter(inscricao => 
@@ -178,6 +214,9 @@ const PsiPortoPage: React.FC = () => {
       )
     );
   };
+
+  // Combine candidatos without inscricoes with regular data
+  const allCandidatos = [...candidatos.filter(c => !inscricoes.some(i => i.sigo === c.sigo))];
 
   if (loading) {
     return (
@@ -210,17 +249,23 @@ const PsiPortoPage: React.FC = () => {
             <Button
               variant="outline"
               className="bg-grey-300 border-orange-300 text-orange-300 hover:bg-yellow-200 px-5 py-2 h-auto"
-              onClick={() => {
-                setEditingItem(null);
-                setIsAddModalOpen(true);
-              }}
+              onClick={() => openAddModal("inscricao")}
             >
               Adicionar Inscrição
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-grey-300 border-green-500 text-green-500 hover:bg-green-100 px-5 py-2 h-auto"
+              onClick={() => openAddModal("candidato")}
+            >
+              Adicionar Candidato
             </Button>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Main table for inscricoes */}
+        <div className="overflow-x-auto mb-8">
+          <h2 className="text-xl font-semibold mb-2">Inscrições</h2>
           <table className="w-full border-collapse border border-gray-300">
             <thead>
               <tr className="bg-gray-200">
@@ -280,7 +325,7 @@ const PsiPortoPage: React.FC = () => {
                               ...formValues,
                               sigo: inscricao.sigo
                             });
-                            setIsAddModalOpen(true);
+                            openAddModal("diagnostico");
                           }}
                           className="bg-green-300 hover:bg-green-500 text-white px-2 py-1 text-xs"
                         >
@@ -321,7 +366,7 @@ const PsiPortoPage: React.FC = () => {
                               ...formValues,
                               sigo: inscricao.sigo
                             });
-                            setIsAddModalOpen(true);
+                            openAddModal("candidato");
                           }}
                           className="bg-green-300 hover:bg-green-500 text-white px-2 py-1 text-xs"
                         >
@@ -351,6 +396,68 @@ const PsiPortoPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Table for candidatos without inscricoes */}
+        {allCandidatos.length > 0 && (
+          <div className="overflow-x-auto">
+            <h2 className="text-xl font-semibold mb-2">Candidatos Sem Inscrição</h2>
+            <table className="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border border-gray-300 p-2">SIGO</th>
+                  <th className="border border-gray-300 p-2">Status</th>
+                  <th className="border border-gray-300 p-2">Observações</th>
+                  <th className="border border-gray-300 p-2">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allCandidatos.map((candidato) => (
+                  <tr key={candidato._id}>
+                    <td className="border p-2 text-center">{candidato.sigo}</td>
+                    <td className="border p-2">
+                      <div className="flex gap-2 justify-center">
+                        <span className={`inline-block w-3 h-3 rounded-full ${candidato.Portfolio ? 'bg-green-500' : 'bg-red-500'}`} title="Portfolio"></span>
+                        <span className={`inline-block w-3 h-3 rounded-full ${candidato.CC ? 'bg-green-500' : 'bg-red-500'}`} title="CC"></span>
+                        <span className={`inline-block w-3 h-3 rounded-full ${candidato.CH ? 'bg-green-500' : 'bg-red-500'}`} title="CH"></span>
+                      </div>
+                    </td>
+                    <td className="border p-2">
+                      {candidato.OBS || "-"}
+                    </td>
+                    <td className="border p-2">
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          onClick={() => handleEditClick("candidatos", candidato._id, candidato)}
+                          className="bg-orange-300 hover:bg-orange-500 text-white px-3 py-1"
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete("candidatos", candidato._id)}
+                          className="bg-red-300 hover:bg-red-500 text-white px-3 py-1"
+                        >
+                          Remover
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setFormValues({
+                              ...formValues,
+                              sigo: candidato.sigo
+                            });
+                            openAddModal("inscricao");
+                          }}
+                          className="bg-blue-300 hover:bg-blue-500 text-white px-3 py-1"
+                        >
+                          Criar Inscrição
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Modal */}
@@ -358,12 +465,21 @@ const PsiPortoPage: React.FC = () => {
         <div className="fixed inset-0 flex justify-center items-center p-4 bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-lg">
             <h2 className="text-xl font-bold mb-4 text-orange-500">
-              {editingItem ? `Editar ${editingItem.type}` : 'Adicionar Novo Registro'}
+              {editingItem 
+                ? `Editar ${editingItem.type}` 
+                : modalType === "inscricao" 
+                  ? "Adicionar Nova Inscrição" 
+                  : modalType === "candidato" 
+                    ? "Adicionar Novo Candidato" 
+                    : "Adicionar Novo Diagnóstico"}
             </h2>
             
             <form onSubmit={(e) => {
               e.preventDefault();
-              const type = editingItem?.type || 'inscricoes';
+              const type = editingItem?.type || 
+                (modalType === "inscricao" ? "inscricoes" : 
+                 modalType === "candidato" ? "candidatos" : "diagnosticos");
+              
               const data = { ...formValues };
               
               if (editingItem) {
@@ -386,8 +502,8 @@ const PsiPortoPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Fields based on type */}
-                {(!editingItem || editingItem.type === 'inscricoes') && (
+                {/* Fields for inscricao */}
+                {(modalType === "inscricao" || (!isAddModalOpen && editingItem?.type === "inscricoes")) && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Código Inscrição</label>
@@ -396,8 +512,9 @@ const PsiPortoPage: React.FC = () => {
                         name="cod_inscricao"
                         value={formValues.cod_inscricao}
                         onChange={handleInputChange}
-                        className="border border-orange-300 p-2 w-full rounded-lg"
+                        className="border border-orange-300 p-2 w-full rounded-lg bg-gray-100"
                         required
+                        readOnly={isAddModalOpen}
                       />
                     </div>
                     <div className="md:col-span-2">
@@ -588,7 +705,8 @@ const PsiPortoPage: React.FC = () => {
                   </>
                 )}
 
-                {editingItem?.type === 'diagnosticos' && (
+                {/* Fields for diagnostico */}
+                {(modalType === "diagnostico" || (!isAddModalOpen && editingItem?.type === "diagnosticos")) && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Código Diagnóstico</label>
@@ -654,7 +772,8 @@ const PsiPortoPage: React.FC = () => {
                   </>
                 )}
 
-                {editingItem?.type === 'candidatos' && (
+                {/* Fields for candidato */}
+                {(modalType === "candidato" || (!isAddModalOpen && editingItem?.type === "candidatos")) && (
                   <>
                     <div className="flex items-center">
                       <input
