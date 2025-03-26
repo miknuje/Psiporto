@@ -5,6 +5,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Header from "@/app/components/header";
 import { Button } from "@/app/components/ui/button";
+import { CandidatosService, ApiUtils } from '@/app/api/apiService';
+import { API_CONFIG } from '@/app/config';
 
 // Interfaces
 interface Diagnostico {
@@ -93,7 +95,7 @@ interface FormCandidato {
 
 type FormValues = FormInscricao | FormDiagnostico | FormCandidato;
 
-const PsiPortoPage: React.FC = () => {
+const CandidatosPage: React.FC = () => {
   // Data states
   const [diagnosticos, setDiagnosticos] = useState<Diagnostico[]>([]);
   const [inscricoes, setInscricoes] = useState<Inscricao[]>([]);
@@ -167,35 +169,22 @@ const PsiPortoPage: React.FC = () => {
   });
 
   // Fetch all data
-  const fetchAllData = async () => {
+  
+// Exemplo de uso:
+const fetchAllData = async () => {
     try {
       setLoading(true);
-      const [diagRes, inscRes, candRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/diagnosticos"),
-        axios.get("http://localhost:5000/api/inscricoes"),
-        axios.get("http://localhost:5000/api/candidatos")
+      const [diagnosticos, inscricoes, candidatos] = await Promise.all([
+        CandidatosService.getDiagnosticos(),
+        CandidatosService.getInscricoes(),
+        CandidatosService.getCandidatos()
       ]);
-  
-      setDiagnosticos(diagRes.data);
-      setInscricoes(inscRes.data);
-      setCandidatos(candRes.data);
       
-      // Calculate next codes
-      if (inscRes.data.length > 0) {
-        const maxCod = Math.max(...inscRes.data.map((i: Inscricao) => i.cod_inscricao));
-        setNextCodInscricao(maxCod + 1);
-      } else {
-        setNextCodInscricao(1);
-      }
-  
-      if (diagRes.data.length > 0) {
-        const maxDiag = Math.max(...diagRes.data.map((d: Diagnostico) => d.cod_diag));
-        setNextCodDiag(maxDiag + 1);
-      } else {
-        setNextCodDiag(1);
-      }
+      setDiagnosticos(diagnosticos);
+      setInscricoes(inscricoes);
+      setCandidatos(candidatos);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Erro ao buscar dados:", error);
     } finally {
       setLoading(false);
     }
@@ -302,9 +291,9 @@ const PsiPortoPage: React.FC = () => {
     
     try {
       if (editingItem) {
-        await axios.put(`http://localhost:5000/api/${type}/${editingItem.id}`, formValues);
+        await axios.put(`${API_CONFIG.baseURL}/api/${type}/${editingItem.id}`, formValues);
       } else {
-        await axios.post(`http://localhost:5000/api/${type}`, formValues);
+        await axios.post(`${API_CONFIG.baseURL}/api/${type}`, formValues);
       }
       fetchAllData();
       setIsAddModalOpen(false);
@@ -314,11 +303,11 @@ const PsiPortoPage: React.FC = () => {
     }
   };
 
-  // Handle delete
+  // Handle delete modificado
   const handleDelete = async (type: string, id: string) => {
     if (!window.confirm("Tem certeza que deseja remover?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/${type}/${id}`);
+      await axios.delete(`${API_CONFIG.baseURL}/api/${type}/${id}`);
       fetchAllData();
     } catch (error) {
       console.error(`Error removing ${type}:`, error);
@@ -991,4 +980,4 @@ const PsiPortoPage: React.FC = () => {
   );
 };
 
-export default withAuth(PsiPortoPage, ["TORVC"]);
+export default withAuth(CandidatosPage, ["TORVC"]);

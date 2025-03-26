@@ -5,6 +5,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Header from "@/app/components/header";
 import { Button } from "@/app/components/ui/button";
+import { AreasService, ApiUtils } from '@/app/api/apiService';
+import { API_CONFIG } from '@/app/config';
 
 interface Area {
   _id: string;
@@ -87,30 +89,28 @@ const AreasPage: React.FC = () => {
 
   const fetchAllData = async () => {
     try {
-      setLoading(true); // Ativa o estado de carregamento
-      await fetchData("areas", setAreas);
-      await fetchData("nucleos", setNucleos);
-      await fetchData("unidades", setUnidades);
-      await fetchData("niveis", setNiveis);
+      setLoading(true);
+      const [areas, nucleos, unidades, niveis] = await Promise.all([
+        AreasService.getAreas(),
+        AreasService.getNucleos(),
+        AreasService.getUnidades(),
+        AreasService.getNiveis()
+      ]);
+      
+      setAreas(areas);
+      setNucleos(nucleos);
+      setUnidades(unidades);
+      setNiveis(niveis);
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
     } finally {
-      setLoading(false); // Desativa o estado de carregamento, independentemente do resultado
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchAllData();
   }, []);
-
-  const fetchData = async (endpoint: string, setData: Function) => {
-    try {
-      const response = await axios.get(`http://localhost:5000/api/${endpoint}`);
-      setData(response.data);
-    } catch (error) {
-      console.error(`Erro ao buscar ${endpoint}:`, error);
-    }
-  };
 
   // Renderização condicional com base no estado de carregamento
   if (loading) {
@@ -162,7 +162,9 @@ const AreasPage: React.FC = () => {
 
   const handleAdd = async (type: string, data: any) => {
     try {
-      const response = await axios.post(`http://localhost:5000/api/${type}`, data);
+      const response = await axios.post(`${API_CONFIG.baseURL}/api/${type}`, data);
+      
+      // Atualiza o estado correspondente
       if (type === "areas") {
         setAreas((prev) => [...prev, response.data]);
       } else if (type === "nucleos") {
@@ -173,26 +175,30 @@ const AreasPage: React.FC = () => {
         setNiveis((prev) => [...prev, response.data]);
       }
 
-      // Fechar o modal de adição
+      // Fecha todos os modais de adição
       setIsAddModalOpen(false);
       setIsAddNivelModalOpen(false);
       setIsAddNucleoModalOpen(false);
       setIsAddUnidadeModalOpen(false);
 
-      // Recarregar os dados para atualizar a tabela
+      // Recarrega os dados para garantir sincronização
       await fetchAllData();
+      
     } catch (error) {
       console.error(`Erro ao adicionar ${type}:`, error);
+      // Adicione aqui qualquer tratamento de erro adicional (ex: toast notification)
     }
   };
 
   const handleEdit = async (type: string, id: string, updatedData: any) => {
     try {
+      // Prepara os dados formatados para a requisição
       const formattedData: any = {
         Nome: updatedData.Nome,
         isDeleted: false,
       };
 
+      // Adiciona campos específicos para cada tipo
       if (type === "areas") {
         formattedData.cod_area = updatedData.cod;
       } else if (type === "nucleos") {
@@ -200,15 +206,17 @@ const AreasPage: React.FC = () => {
         formattedData.cod_area = updatedData.cod_area;
       } else if (type === "unidades") {
         formattedData.cod_unidade = updatedData.cod;
-        formattedData.cod_nucleo = updatedData.cod_nucleo;
+        formattedData.cod_nucleo = updatedData.cod_nucleo === "null" ? null : updatedData.cod_nucleo;
         formattedData.cod_area = updatedData.cod_area;
       } else if (type === "niveis") {
         formattedData.cod_nivel = updatedData.cod;
       }
 
-      const endpoint = `http://localhost:5000/api/${type}/${id}`;
+      // Faz a requisição PUT
+      const endpoint = `${API_CONFIG.baseURL}/api/${type}/${id}`;
       const response = await axios.put(endpoint, formattedData);
 
+      // Atualiza o estado local
       if (type === "areas") {
         setAreas((prev) =>
           prev.map((area) =>
@@ -235,38 +243,55 @@ const AreasPage: React.FC = () => {
         );
       }
 
+      // Fecha o modal de edição e recarrega os dados
       setIsEditModalOpen(false);
       await fetchAllData();
+
     } catch (error) {
       console.error(`Erro ao editar ${type}:`, error);
+      // Adicione tratamento de erro adicional se necessário
     }
   };
 
   const handleDelete = async (type: string, id: string) => {
+    // Confirmação antes de deletar
     const confirmDelete = window.confirm("Tem certeza que deseja remover?");
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/${type}/${id}`);
+      // Requisição DELETE
+      await axios.delete(`${API_CONFIG.baseURL}/api/${type}/${id}`);
+
+      // Atualiza o estado removendo o item deletado
       if (type === "areas") {
-        setAreas((prevAreas) =>
-          prevAreas.filter((area) => area.cod_area !== id)
-        );
+        setAreas((prevAreas) => prevAreas.filter((area) => area.cod_area !== id));
+        
+        // Remove também os núcleos e unidades associadas
+        setNucleos((prevNucleos) => prevNucleos.filter((nucleo) => nucleo.cod_area !== id));
+        setUnidades((prevUnidades) => prevUnidades.filter((unidade) => unidade.cod_area !== id));
+        
       } else if (type === "nucleos") {
-        setNucleos((prevNucleos) =>
-          prevNucleos.filter((nucleo) => nucleo.cod_nucleo !== id)
-        );
+        setNucleos((prevNucleos) => prevNucleos.filter((nucleo) => nucleo.cod_nucleo !== id));
+        
+        // Remove também as unidades associadas
+        setUnidades((prevUnidades) => prevUnidades.filter((unidade) => unidade.cod_nucleo !== id));
+        
       } else if (type === "unidades") {
-        setUnidades((prevUnidades) =>
-          prevUnidades.filter((unidade) => unidade.cod_unidade !== id)
-        );
+        setUnidades((prevUnidades) => prevUnidades.filter((unidade) => unidade.cod_unidade !== id));
+        
+        // Remove também os níveis associados
+        setNiveis((prevNiveis) => prevNiveis.filter((nivel) => nivel.cod_unidade !== id));
+        
       } else if (type === "niveis") {
-        setNiveis((prevNiveis) =>
-          prevNiveis.filter((nivel) => nivel.cod_nivel !== id)
-        );
+        setNiveis((prevNiveis) => prevNiveis.filter((nivel) => nivel.cod_nivel !== id));
       }
+
+      // Recarrega os dados para garantir sincronização
+      await fetchAllData();
+
     } catch (error) {
       console.error(`Erro ao remover ${type}:`, error);
+      // Adicione tratamento de erro adicional se necessário
     }
   };
 
