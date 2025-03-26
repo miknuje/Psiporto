@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"; // Adicionei o useEffect
 import axios from "axios";
 import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
+import { API_CONFIG } from "@/app/config";
 
 const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState<string>("");
@@ -27,8 +28,11 @@ const ForgotPasswordPage: React.FC = () => {
     setMessage(null);
 
     try {
-      // Simula uma requisição para recuperar a senha
-      await axios.post("http://localhost:5000/api/auth/forgot-password", { Email: email });
+      // URL atualizada para usar API_CONFIG
+      await axios.post(
+        `${API_CONFIG.baseURL}${API_CONFIG.authEndpoint}/forgot-password`, 
+        { Email: email }
+      );
       setMessage("Um e-mail com instruções foi enviado para o seu endereço.");
     } catch (err: any) {
       setError(err.response?.data?.message || "Erro ao enviar o e-mail. Verifique o endereço fornecido.");

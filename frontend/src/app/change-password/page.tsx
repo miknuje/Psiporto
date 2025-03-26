@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import axios from "axios"
 import { Button } from "@/app/components/ui/button"
+import { API_CONFIG } from "@/app/config" 
 
 export default function ChangePassword() {
   const router = useRouter()
@@ -39,9 +40,9 @@ export default function ChangePassword() {
         throw new Error("Usuário não autenticado")
       }
 
-      // Envia a requisição para o backend
+      // Atualizado para usar API_CONFIG
       const response = await axios.post(
-        "http://localhost:5000/api/auth/change-password",
+        `${API_CONFIG.baseURL}${API_CONFIG.authEndpoint}/change-password`,
         { currentPassword, newPassword },
         {
           headers: {
@@ -55,7 +56,6 @@ export default function ChangePassword() {
       setNewPassword("")
       setConfirmPassword("")
 
-      // Logout automático após 2 segundos
       setTimeout(() => {
         localStorage.removeItem("token")
         localStorage.removeItem("user")
