@@ -1,0 +1,10 @@
+# Ignorar arquivos de ambiente
+.env
+
+# Ignorar diretórios do Node.js (se aplicável)
+node_modules/
+dist/
+frontend/.next/
+
+# Ignorar logs e cache
+*.log
