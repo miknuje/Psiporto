@@ -1,10 +1,47 @@
-# Ignorar arquivos de ambiente
-.env
+# 🔒 Ignorar arquivos de ambiente  
+.env*  
 
-# Ignorar diretórios do Node.js (se aplicável)
-node_modules/
-dist/
-frontend/.next/
+# 📦 Ignorar dependências e pacotes  
+node_modules/  
+.pnp  
+.pnp.*  
+.yarn/*  
+!.yarn/patches  
+!.yarn/plugins  
+!.yarn/releases  
+!.yarn/versions  
 
-# Ignorar logs e cache
-*.log
+# 🛠️ Ignorar diretórios de build  
+dist/  
+.build  
+.out/  
+
+# 🚀 Ignorar arquivos do Next.js  
+.next/  
+frontend/.next/  
+
+# 🎯 Ignorar arquivos do Vercel  
+.vercel  
+
+# ✅ Ignorar arquivos de cobertura de testes  
+coverage/  
+
+# 💾 Ignorar arquivos de cache e logs  
+*.log  
+npm-debug.log*  
+yarn-debug.log*  
+yarn-error.log*  
+.pnpm-debug.log*  
+
+# 📂 Ignorar arquivos de sistema e configurações  
+.DS_Store  
+*.pem  
+
+# 📝 Ignorar arquivos específicos do TypeScript  
+*.tsbuildinfo  
+next-env.d.ts  
+
+# 📂 Ignorar arquivos do backend  
+backend/.env  
+backend/node_modules/  
+backend/dist/  
