@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
+import { API_CONFIG } from "@/app/config";
 
 interface LoginCredentials {
   email: string;
@@ -43,19 +44,20 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      // Ajusta os nomes dos campos para maiúsculas
       const payload = {
         Email: credentials.email,
         Password: credentials.password,
       };
 
-      const response = await axios.post("http://localhost:5000/api/auth/login", payload);
+      // URL atualizada para usar API_CONFIG
+      const response = await axios.post(
+        `${API_CONFIG.baseURL}${API_CONFIG.authEndpoint}/login`,
+        payload
+      );
 
-      // Armazena o token ou dados do usuário no localStorage ou contexto
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
 
-      // Redireciona para a página de áreas
       router.push("/areas");
     } catch (err: any) {
       setError(err.response?.data?.message || "Erro ao fazer login. Verifique suas credenciais.");

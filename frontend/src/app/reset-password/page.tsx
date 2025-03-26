@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
+import { API_CONFIG } from "@/app/config";
 
 const ResetPasswordPage: React.FC = () => {
   const searchParams = useSearchParams();
@@ -41,17 +42,14 @@ const ResetPasswordPage: React.FC = () => {
     setError(null);
     setMessage(null);
   
-    // Verifica se os valores estão definidos
     if (!email || !token || !newPassword) {
       setError("Erro interno: Dados ausentes.");
       setIsLoading(false);
       return;
     }
   
-    // Debugging: Log dos valores antes de enviar
     console.log("Enviando:", { Email: email, resetToken: token, newPassword });
   
-    // Verifica se as senhas coincidem
     if (newPassword !== confirmPassword) {
       setError("As senhas não coincidem.");
       setIsLoading(false);
@@ -59,7 +57,8 @@ const ResetPasswordPage: React.FC = () => {
     }
   
     try {
-      await axios.post("http://localhost:5000/api/auth/reset-password", {
+      // URL atualizada para usar API_CONFIG
+      await axios.post(`${API_CONFIG.baseURL}${API_CONFIG.authEndpoint}/reset-password`, {
         Email: email,
         resetToken: token,
         newPassword,
