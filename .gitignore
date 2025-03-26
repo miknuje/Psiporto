@@ -45,3 +45,6 @@ next-env.d.ts
 backend/.env  
 backend/node_modules/  
 backend/dist/  
+
+# 📂 Ignorar arquivos test do fronend 
+frontend-test/
